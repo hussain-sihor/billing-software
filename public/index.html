@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bellavo Billing — Invoices &amp; Quotations</title>
+<script src="/vendor/html2canvas.min.js"></script>
+<script src="/vendor/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --navy:#132A4C;
+  --navy-2:#1E3E68;
+  --paper:#FFFFFF;
+  --bg:#F3F5F8;
+  --border:#D7DEE8;
+  --border-strong:#AAB6C6;
+  --text:#1E293B;
+  --muted:#67758C;
+  --accent:#0E7C6B;
+  --accent-dark:#0A5F52;
+  --danger:#B3261E;
+  --danger-bg:#FDEEEC;
+  --amber:#9A6A00;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.45;
+}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--text);}
+h1,h2,h3,h4{margin:0 0 4px 0;font-weight:600;}
+a{color:var(--accent-dark);}
+
+/* ---------- layout ---------- */
+#app{display:flex;min-height:100vh;position:relative;z-index:1;}
+.sidebar{
+  width:220px;flex:0 0 220px;background:var(--navy);color:#E7ECF3;
+  padding:22px 0;position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.brand{padding:0 20px 20px 20px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px;}
+.brand .mark{
+  width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#14A38A);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:white;margin-bottom:10px;
+}
+.brand .name{font-size:15px;font-weight:700;letter-spacing:.2px;}
+.brand .sub{font-size:11.5px;color:#9FB0C6;margin-top:2px;}
+nav.tabs{display:flex;flex-direction:column;padding:0 10px;gap:2px;}
+nav.tabs button{
+  display:flex;align-items:center;gap:10px;background:transparent;border:none;color:#C7D3E3;
+  text-align:left;padding:10px 12px;border-radius:8px;font-size:13.5px;font-weight:500;
+}
+nav.tabs button:hover{background:rgba(255,255,255,.06);color:#fff;}
+nav.tabs button.active{background:var(--navy-2);color:#fff;}
+nav.tabs .ic{width:18px;text-align:center;font-size:14px;opacity:.9;}
+
+.content{flex:1;min-width:0;padding:26px 30px 60px 30px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.topbar h1{font-size:20px;}
+.topbar .desc{color:var(--muted);font-size:13px;margin-top:2px;}
+
+.card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:18px;}
+.card h3{font-size:14.5px;color:var(--navy);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:14px;}
+
+.grid{display:grid;gap:14px;}
+.grid.cols-2{grid-template-columns:1fr 1fr;}
+.grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
+.grid.cols-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+@media (max-width:900px){.grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr;}}
+
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600;}
+.field input,.field select,.field textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;background:#fff;
+}
+.field textarea{resize:vertical;min-height:56px;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent);}
+
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:7px;border:1px solid transparent;
+  font-size:13.5px;font-weight:600;background:var(--navy);color:#fff;
+}
+.btn:hover{background:var(--navy-2);}
+.btn.primary{background:var(--accent);}
+.btn.primary:hover{background:var(--accent-dark);}
+.btn.ghost{background:transparent;border:1px solid var(--border-strong);color:var(--text);}
+.btn.ghost:hover{background:#EEF1F5;}
+.btn.danger{background:var(--danger-bg);color:var(--danger);border:1px solid #F3C9C4;}
+.btn.danger:hover{background:#FADCD8;}
+.btn.sm{padding:6px 10px;font-size:12.5px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+.row-actions{display:flex;gap:16px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+
+table.dtable{width:100%;border-collapse:collapse;font-size:13px;}
+table.dtable th{
+  text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);
+  border-bottom:1px solid var(--border-strong);padding:8px 8px;
+}
+table.dtable td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+table.dtable tr:hover td{background:#FAFBFD;}
+.empty-state{padding:30px 10px;text-align:center;color:var(--muted);font-size:13.5px;}
+.empty-state .big{font-size:26px;margin-bottom:6px;}
+
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.2px;}
+.pill.invoice{background:#E4F3EE;color:var(--accent-dark);}
+.pill.quotation{background:#EAF0FB;color:#2A4E9C;}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+@media (max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+.stat{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.stat .num{font-size:24px;font-weight:700;color:var(--navy);}
+.stat .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* item table (editor) */
+table.items{width:100%;border-collapse:collapse;margin-top:6px;}
+table.items th{background:#F0F3F7;font-size:11px;text-transform:uppercase;color:var(--muted);padding:8px 6px;text-align:left;border:1px solid var(--border);}
+table.items td{border:1px solid var(--border);padding:5px 6px;vertical-align:top;cursor:text;}
+table.items input,table.items select{border:1px solid transparent;background:transparent;padding:5px 4px;width:100%;box-sizing:border-box;font-family:inherit;font-size:inherit;}
+table.items input:focus,table.items select:focus{background:#fff;border-color:var(--accent);border-radius:4px;box-shadow:0 0 0 2px rgba(14,124,107,.2);outline:none;}
+table.items td.num{text-align:right;}
+table.items input.num-in{text-align:right;}
+table.items input[type=number]::-webkit-inner-spin-button,
+table.items input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+table.items input[type=number]{-moz-appearance:textfield;}
+table.items td.rm{text-align:center;width:34px;}
+.rm-btn{border:none;background:transparent;color:var(--danger);font-size:16px;font-weight:700;}
+.slno-col{width:36px;text-align:center;color:var(--muted);}
+
+/* ---- product search-in-row ---- */
+.prod-search-wrap{position:relative;width:100%;}
+.prod-search-input{width:100%;box-sizing:border-box;border:1px solid transparent;background:transparent;padding:5px 4px;font-size:inherit;font-family:inherit;color:inherit;}
+.prod-search-input:focus{outline:none;background:#fff;border-color:var(--accent);border-radius:4px;}
+.prod-search-input.has-value{font-weight:600;}
+.prod-dropdown{position:absolute;top:100%;left:0;min-width:320px;width:100%;max-width:440px;background:#fff;border:1px solid #CBD5E1;border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.15);z-index:9999;max-height:300px;overflow-y:auto;display:none;}
+.prod-dropdown.open{display:block;}
+.prod-section-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;color:#94a3b8;padding:8px 12px 3px 12px;border-top:1px solid #F1F5F9;margin-top:0;}
+.prod-section-label:first-child{border-top:none;margin-top:0;}
+.prod-item{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;transition:background .12s;}
+.prod-item:hover,.prod-item.active{background:#EFF6FF;}
+.prod-item-name{font-size:12px;font-weight:600;color:#1e293b;flex:1;}
+.prod-item-meta{font-size:10.5px;color:#64748b;white-space:nowrap;}
+.prod-item-rate{font-size:11px;font-weight:700;color:#0f766e;white-space:nowrap;}
+.prod-no-result{padding:10px 12px;font-size:12px;color:#64748b;font-style:italic;}
+.prod-highlight{background:#FEF9C3;border-radius:2px;font-weight:700;color:#92400E;}
+
+.totals-box{margin-top:14px;display:flex;justify-content:flex-end;}
+.totals-box table{border-collapse:collapse;min-width:340px;}
+.totals-box td{padding:6px 10px;font-size:13.5px;}
+.totals-box td.lbl{color:var(--muted);}
+.totals-box td.val{text-align:right;font-variant-numeric:tabular-nums;}
+.totals-box tr.grand td{border-top:2px solid var(--navy);font-weight:700;font-size:15.5px;color:var(--navy);padding-top:10px;}
+.gst-mode{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.gst-mode label{display:flex;align-items:center;gap:5px;font-size:13px;border:1px solid var(--border-strong);padding:6px 10px;border-radius:6px;cursor:pointer;}
+.gst-mode input{margin:0;}
+.words-line{margin-top:10px;padding:9px 12px;background:#F7F8FA;border:1px dashed var(--border-strong);border-radius:6px;font-size:13px;color:var(--navy);}
+
+.inline-note{font-size:12px;color:var(--muted);margin-top:4px;}
+
+.search-bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.search-bar input{flex:1;min-width:220px;padding:9px 12px;border:1px solid var(--border-strong);border-radius:7px;}
+.search-bar select{padding:9px 12px;border:1px solid var(--border-strong);border-radius:7px;}
+
+.toast{
+  position:fixed;bottom:22px;right:22px;background:var(--navy);color:#fff;padding:12px 18px;border-radius:8px;
+  font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;z-index:999;
+}
+.toast.show{opacity:1;transform:translateY(0);}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,25,40,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:900;overflow-y:auto;}
+.modal-backdrop.open{display:flex;}
+.modal{background:#fff;border-radius:12px;max-width:480px;width:100%;padding:22px;margin-top:20px;}
+.modal h3{margin-bottom:14px;}
+.modal .row-actions{margin-top:18px;}
+
+hr.sep{border:none;border-top:1px solid var(--border);margin:18px 0;}
+
+/* Per-template invoice/quotation CSS is injected into <head> from JS at
+   load time (see TPL_CSS in the script) — kept out of this static
+   stylesheet so switching templates can't leave old rules bleeding in. */
+
+/* ---------- preview modal ---------- */
+.preview-backdrop .modal{max-width:880px;width:97%;padding:16px;}
+.preview-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap;}
+.preview-toolbar h3{margin:0;font-size:15px;}
+.preview-toolbar .actions{display:flex;gap:8px;flex-wrap:wrap;}
+#previewScroll{max-height:74vh;overflow:auto;background:#E7EAEF;border:1px solid var(--border);padding:16px;display:flex;justify-content:center;}
+#previewContainer{zoom:0.82;}
+@media (max-width:700px){#previewContainer{zoom:0.42;}}
+.pdf-status{font-size:12px;color:var(--muted);margin-top:8px;min-height:16px;}
+
+/* Off-screen copy of the invoice used for PDF capture and for print.
+   Must NOT sit inside a transformed / overflow:auto ancestor — html2canvas
+   draws a blank page in that situation, and browser print was shrinking
+   the scaled preview instead of the real A4 page. */
+#exportMount{
+  position:fixed;
+  left:-10000px;
+  top:0;
+  width:794px;
+  background:#fff;
+  z-index:0;
+  pointer-events:none;
+}
+
+@media print{
+  @page{size:A4;margin:0;}
+  html,body{
+    margin:0 !important;
+    padding:0 !important;
+    background:#fff !important;
+    height:auto !important;
+    overflow:visible !important;
+  }
+  body.is-exporting-print > *:not(#exportMount){display:none !important;}
+  body.is-exporting-print #exportMount{
+    display:block !important;
+    position:static !important;
+    left:auto !important;
+    top:auto !important;
+    width:210mm !important;
+    z-index:auto !important;
+    pointer-events:auto !important;
+    background:#fff !important;
+  }
+  body.is-exporting-print #exportMount .doc-sheet{
+    gap:0 !important;
+    width:210mm !important;
+  }
+  body.is-exporting-print #exportMount .doc-page{
+    box-shadow:none !important;
+    margin:0 !important;
+    width:210mm !important;
+    height:297mm !important;
+    min-height:297mm !important;
+    max-height:297mm !important;
+    page-break-after:always;
+    break-after:page;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  body.is-exporting-print #exportMount .doc-page:last-child{
+    page-break-after:auto;
+    break-after:auto;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">B</div>
+      <div class="name" id="brandName">Bellavo Billing</div>
+      <div class="sub">Invoices &amp; quotations</div>
+    </div>
+    <nav class="tabs" id="navTabs">
+      <button data-tab="dashboard" class="active"><span class="ic">&#9632;</span> Dashboard</button>
+      <button data-tab="newdoc"><span class="ic">&#10133;</span> New bill / quotation</button>
+      <button data-tab="saved"><span class="ic">&#128193;</span> Saved documents</button>
+      <button data-tab="products"><span class="ic">&#128230;</span> Products</button>
+      <button data-tab="parties"><span class="ic">&#128100;</span> Parties</button>
+      <button data-tab="settings"><span class="ic">&#9881;</span> Settings</button>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard">
+      <div class="topbar">
+        <div><h1>Dashboard</h1><div class="desc">Overview of your billing activity.</div></div>
+        <div>
+          <button class="btn primary" onclick="goNew('invoice')">+ New bill</button>
+          <button class="btn ghost" onclick="goNew('quotation')">+ New quotation</button>
+        </div>
+      </div>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="card">
+        <h3>Recent documents</h3>
+        <div id="recentDocsBox"></div>
+      </div>
+    </section>
+
+    <!-- NEW DOC -->
+    <section id="tab-newdoc" hidden>
+      <div class="topbar">
+        <div>
+          <h1 id="newDocTitle">New bill</h1>
+          <div class="desc">Fill in the details below. GST is applied on the total bill value.</div>
+        </div>
+        <div>
+          <div class="gst-mode" style="margin:0;">
+            <label><input type="radio" name="docType" value="invoice" checked onchange="setDocType('invoice')"> Bill (Invoice)</label>
+            <label><input type="radio" name="docType" value="quotation" onchange="setDocType('quotation')"> Quotation</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Document details</h3>
+        <div class="grid cols-4">
+          <div class="field"><label id="docNoLabel">Invoice No.</label><input id="f_docNumber"></div>
+          <div class="field"><label>Date</label><input type="date" id="f_date"></div>
+          <div class="field"><label>Delivery note</label><input id="f_deliveryNote" placeholder="Optional"></div>
+          <div class="field"><label>Terms of payment / delivery</label><input id="f_terms" placeholder="e.g. 100% advance"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Bill to (party)</h3>
+        <div class="grid cols-3">
+          <div class="field">
+            <label>Select party</label>
+            <select id="f_party" onchange="onPartySelect()"></select>
+          </div>
+          <div class="field" style="align-self:end;">
+            <button class="btn ghost sm" onclick="openPartyModal(null)">+ Add new party</button>
+          </div>
+        </div>
+        <div id="partyPreview" class="inline-note" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="card">
+        <h3>Items</h3>
+        <table class="items" id="itemsTable">
+          <thead>
+            <tr>
+              <th style="width:34px;">Sl</th>
+              <th>Product / description</th>
+              <th style="width:80px;">Qty</th>
+              <th style="width:70px;">Unit</th>
+              <th style="width:100px;">Rate</th>
+              <th style="width:70px;">Disc %</th>
+              <th style="width:110px;">Amount</th>
+              <th style="width:34px;"></th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody"></tbody>
+        </table>
+        <div style="margin-top:10px;">
+          <button class="btn ghost sm" onclick="addItemRow()">+ Add row</button>
+          <button class="btn ghost sm" onclick="openProductModal(null)">+ New product</button>
+        </div>
+
+        <div class="totals-box">
+          <table>
+            <tr><td class="lbl">Subtotal</td><td class="val" id="t_subtotal">₹0.00</td></tr>
+            <tr>
+              <td colspan="2">
+                <div class="gst-mode" style="margin-top:8px;">
+                  <label><input type="radio" name="gstMode" value="none" onchange="recalcTotals()"> No GST</label>
+                  <label><input type="radio" name="gstMode" value="split" checked onchange="recalcTotals()"> CGST + SGST</label>
+                  <label><input type="radio" name="gstMode" value="igst" onchange="recalcTotals()"> IGST</label>
+                  <span style="margin-left:6px;">
+                    <select id="f_gstRate" onchange="recalcTotals()" style="padding:6px 8px;border:1px solid var(--border-strong);border-radius:6px;">
+                      <option value="0">0%</option>
+                      <option value="5">5%</option>
+                      <option value="8">8%</option>
+                      <option value="12" selected>12%</option>
+                      <option value="18">18%</option>
+                      <option value="28">28%</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </span>
+                  <input id="f_gstCustom" placeholder="%" style="width:56px;padding:6px 8px;border:1px solid var(--border-strong);border-radius:6px;display:none;" oninput="recalcTotals()">
+                </div>
+              </td>
+            </tr>
+            <tr id="row_cgst"><td class="lbl" id="lbl_cgst">CGST</td><td class="val" id="t_cgst">₹0.00</td></tr>
+            <tr id="row_sgst"><td class="lbl" id="lbl_sgst">SGST</td><td class="val" id="t_sgst">₹0.00</td></tr>
+            <tr id="row_igst" style="display:none;"><td class="lbl">IGST</td><td class="val" id="t_igst">₹0.00</td></tr>
+            <tr><td class="lbl">Round off</td><td class="val" id="t_round">₹0.00</td></tr>
+            <tr class="grand"><td class="lbl">Grand total</td><td class="val" id="t_grand">₹0.00</td></tr>
+          </table>
+        </div>
+        <div class="words-line" id="amountWords">Amount in words: —</div>
+      </div>
+
+      <div class="row-actions">
+        <button class="btn ghost" onclick="clearForm(true)">Clear</button>
+        <button class="btn ghost" onclick="doPreviewPrint()">Preview / Print / PDF</button>
+        <button class="btn primary" onclick="saveDocument()">Save document</button>
+      </div>
+    </section>
+
+    <!-- SAVED -->
+    <section id="tab-saved" hidden>
+      <div class="topbar">
+        <div><h1>Saved documents</h1><div class="desc">All bills and quotations you've saved.</div></div>
+      </div>
+      <div class="card">
+        <div class="search-bar">
+          <input id="searchDocs" placeholder="Search by number or party name..." oninput="renderSavedTab()">
+          <select id="filterType" onchange="renderSavedTab()">
+            <option value="all">All types</option>
+            <option value="invoice">Bills only</option>
+            <option value="quotation">Quotations only</option>
+          </select>
+        </div>
+        <table class="dtable">
+          <thead><tr><th>No.</th><th>Type</th><th>Date</th><th>Party</th><th>Amount</th><th></th></tr></thead>
+          <tbody id="savedBody"></tbody>
+        </table>
+        <div id="savedEmpty"></div>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section id="tab-products" hidden>
+      <div class="topbar">
+        <div><h1>Products</h1><div class="desc">Manage the product list used in bills and quotations.</div></div>
+        <button class="btn primary" onclick="openProductModal(null)">+ Add product</button>
+      </div>
+      <div class="card">
+        <table class="dtable">
+          <thead><tr><th>Name</th><th>Description</th><th>Unit</th><th>Default rate</th><th></th></tr></thead>
+          <tbody id="productsBody"></tbody>
+        </table>
+        <div id="productsEmpty"></div>
+      </div>
+    </section>
+
+    <!-- PARTIES -->
+    <section id="tab-parties" hidden>
+      <div class="topbar">
+        <div><h1>Parties</h1><div class="desc">Manage customer / buyer details.</div></div>
+        <button class="btn primary" onclick="openPartyModal(null)">+ Add party</button>
+      </div>
+      <div class="card">
+        <table class="dtable">
+          <thead><tr><th>Name</th><th>GSTIN</th><th>Email</th><th>Phone</th><th></th></tr></thead>
+          <tbody id="partiesBody"></tbody>
+        </table>
+        <div id="partiesEmpty"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" hidden>
+      <div class="topbar"><div><h1>Settings</h1><div class="desc">Your business details, shown on every bill and quotation.</div></div></div>
+
+      <div class="card">
+        <h3>Company details</h3>
+        <div class="grid cols-2">
+          <div class="field"><label>Company name</label><input id="s_companyName"></div>
+          <div class="field"><label>GSTIN</label><input id="s_gstNo"></div>
+          <div class="field" style="grid-column:1/-1;"><label>Address</label><textarea id="s_address"></textarea></div>
+          <div class="field"><label>Phone</label><input id="s_phone"></div>
+          <div class="field"><label>Email</label><input id="s_email"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Numbering</h3>
+        <div class="grid cols-4">
+          <div class="field"><label>Bill prefix</label><input id="s_invPrefix"></div>
+          <div class="field"><label>Next bill number</label><input type="number" id="s_invCounter"></div>
+          <div class="field"><label>Quotation prefix</label><input id="s_qtPrefix"></div>
+          <div class="field"><label>Next quotation number</label><input type="number" id="s_qtCounter"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Bank details</h3>
+        <div class="grid cols-2">
+          <div class="field"><label>Bank name</label><input id="s_bankName"></div>
+          <div class="field"><label>Account name</label><input id="s_accName"></div>
+          <div class="field"><label>Account number</label><input id="s_accNo"></div>
+          <div class="field"><label>IFSC code</label><input id="s_ifsc"></div>
+          <div class="field"><label>Branch</label><input id="s_branch"></div>
+          <div class="field"><label>UPI ID (optional)</label><input id="s_upi"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Terms &amp; jurisdiction</h3>
+        <div class="field"><label>Footer note</label><textarea id="s_jurisdiction">Subject to Chennai Jurisdiction only. This is a computer generated document.</textarea></div>
+      </div>
+
+      <div class="card">
+        <h3>Invoice / quotation format</h3>
+        <div class="field">
+          <label>Default template</label>
+          <select id="s_template"></select>
+          <div class="inline-note">Used whenever you print or download a new bill or quotation. You can still pick a different one on the fly from the preview screen.</div>
+        </div>
+      </div>
+
+      <div class="row-actions"><button class="btn primary" onclick="saveSettingsForm()">Save settings</button></div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal-backdrop preview-backdrop" id="previewModalBackdrop">
+  <div class="modal">
+    <div class="preview-toolbar no-print">
+      <h3>Document preview</h3>
+      <div class="actions">
+        <select id="previewTemplateSelect" onchange="onPreviewTemplateChange()" style="padding:7px 10px;border:1px solid var(--border-strong);border-radius:6px;"></select>
+        <button class="btn ghost sm" onclick="printFromPreview()">ðŸ–¨ï¸ Print</button>
+        <button class="btn primary sm" onclick="downloadPdfFromPreview()">⬇ Download PDF</button>
+        <a class="btn ghost sm" id="openNewTabLink" href="#" target="_blank" rel="noopener">Open in new tab</a>
+        <button class="btn ghost sm" onclick="closePreviewModal()">Close</button>
+      </div>
+    </div>
+    <div id="previewScroll"><div id="previewContainer"></div></div>
+    <div class="pdf-status no-print" id="pdfStatus"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div id="exportMount" aria-hidden="true"></div>
+
+<!-- Product modal -->
+<div class="modal-backdrop" id="productModalBackdrop">
+  <div class="modal">
+    <h3 id="productModalTitle">Add product</h3>
+    <div class="grid cols-2">
+      <div class="field" style="grid-column:1/-1;"><label>Product name</label><input id="pm_name"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Description</label><textarea id="pm_description"></textarea></div>
+      <div class="field"><label>Unit</label><input id="pm_unit" placeholder="pcs / kg / box"></div>
+      <div class="field"><label>Default rate (₹)</label><input type="number" id="pm_rate"></div>
+      <div class="field" style="grid-column:1/-1;"><label>HSN/SAC code (optional)</label><input id="pm_hsn" placeholder="Only used by the GST-Detailed invoice format"></div>
+    </div>
+    <div class="row-actions">
+      <button class="btn ghost" onclick="closeProductModal()">Cancel</button>
+      <button class="btn primary" onclick="saveProductModal()">Save product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Party modal -->
+<div class="modal-backdrop" id="partyModalBackdrop">
+  <div class="modal">
+    <h3 id="partyModalTitle">Add party</h3>
+    <div class="grid cols-2">
+      <div class="field" style="grid-column:1/-1;"><label>Party name</label><input id="pt_name"></div>
+      <div class="field"><label>GSTIN</label><input id="pt_gst"></div>
+      <div class="field"><label>Phone</label><input id="pt_phone"></div>
+      <div class="field"><label>Email</label><input id="pt_email"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Address</label><textarea id="pt_address"></textarea></div>
+    </div>
+    <div class="row-actions">
+      <button class="btn ghost" onclick="closePartyModal()">Cancel</button>
+      <button class="btn primary" onclick="savePartyModal()">Save party</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   STATE
+   ========================================================= */
+let settings = null;
+let products = [];
+let parties = [];
+let documents = [];
+let editingDocId = null;
+let editingProductId = null;
+let editingPartyId = null;
+let currentDocType = 'invoice';
+
+/* =========================================================
+   API HELPERS (talks to the Express + MongoDB backend)
+   ========================================================= */
+const API = '/api';
+async function api(path, opts){
+  let res;
+  try{
+    res = await fetch(API + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts
+    });
+  }catch(networkErr){
+    throw new Error('Cannot reach the server. Is the backend running?');
+  }
+  let body = null;
+  try{ body = await res.json(); }catch(e){ /* no body */ }
+  if(!res.ok){
+    throw new Error((body && body.error) || `Request failed (${res.status})`);
+  }
+  return body;
+}
+const apiGet = (path) => api(path);
+const apiPost = (path, data) => api(path, { method: 'POST', body: JSON.stringify(data) });
+const apiPut = (path, data) => api(path, { method: 'PUT', body: JSON.stringify(data) });
+const apiDelete = (path) => api(path, { method: 'DELETE' });
+
+async function loadAll(){
+  [settings, products, parties, documents] = await Promise.all([
+    apiGet('/settings'),
+    apiGet('/products'),
+    apiGet('/parties'),
+    apiGet('/documents')
+  ]);
+}
+
+/* =========================================================
+   UTIL
+   ========================================================= */
+function todayISO(){ const d = new Date(); return d.toISOString().slice(0,10); }
+function fmtDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}-${m}-${y}`;
+}
+function fmtMoney(n){
+  n = Number(n)||0;
+  const neg = n < 0; n = Math.abs(n);
+  let [intPart, dec] = n.toFixed(2).split('.');
+  let last3 = intPart.slice(-3);
+  let rest = intPart.slice(0,-3);
+  if(rest !== '') last3 = ',' + last3;
+  rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+  return (neg?'-':'') + '₹' + rest + last3 + '.' + dec;
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* Indian numbering, number to words */
+const ONES = ["","one","two","three","four","five","six","seven","eight","nine","ten",
+  "eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"];
+const TENS = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+function twoDigits(n){
+  if(n < 20) return ONES[n];
+  return TENS[Math.floor(n/10)] + (n%10 ? " " + ONES[n%10] : "");
+}
+function threeDigits(n){
+  let s = "";
+  if(n >= 100){ s += ONES[Math.floor(n/100)] + " hundred"; n = n % 100; if(n) s += " "; }
+  if(n > 0) s += twoDigits(n);
+  return s;
+}
+function numberToWordsIndian(num){
+  num = Math.round(num);
+  if(num === 0) return "zero";
+  let crore = Math.floor(num / 10000000); num %= 10000000;
+  let lakh = Math.floor(num / 100000); num %= 100000;
+  let thousand = Math.floor(num / 1000); num %= 1000;
+  let hundred = num;
+  let parts = [];
+  if(crore) parts.push(threeDigits(crore) + " crore");
+  if(lakh) parts.push(threeDigits(lakh) + " lakh");
+  if(thousand) parts.push(threeDigits(thousand) + " thousand");
+  if(hundred) parts.push(threeDigits(hundred));
+  return parts.join(" ").replace(/\s+/g,' ').trim();
+}
+function capitalizeWords(s){
+  return s.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+function switchTab(tab){
+  document.querySelectorAll('#navTabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab === tab));
+  ['dashboard','newdoc','saved','products','parties','settings'].forEach(t=>{
+    document.getElementById('tab-'+t).hidden = (t !== tab);
+  });
+  if(tab === 'dashboard') renderDashboard();
+  if(tab === 'saved') renderSavedTab();
+  if(tab === 'products') renderProductsTab();
+  if(tab === 'parties') renderPartiesTab();
+  if(tab === 'settings') fillSettingsForm();
+}
+document.getElementById('navTabs').addEventListener('click', e=>{
+  const b = e.target.closest('button[data-tab]');
+  if(b) switchTab(b.dataset.tab);
+});
+function goNew(type){
+  switchTab('newdoc');
+  clearForm(false);
+  setDocType(type);
+}
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+function renderDashboard(){
+  const invoices = documents.filter(d=>d.type==='invoice');
+  const quotations = documents.filter(d=>d.type==='quotation');
+  const totalBilled = invoices.reduce((s,d)=>s+d.grandTotal,0);
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat"><div class="num">${invoices.length}</div><div class="lbl">Bills raised</div></div>
+    <div class="stat"><div class="num">${quotations.length}</div><div class="lbl">Quotations sent</div></div>
+    <div class="stat"><div class="num">${fmtMoney(totalBilled)}</div><div class="lbl">Total billed value</div></div>
+    <div class="stat"><div class="num">${products.length} / ${parties.length}</div><div class="lbl">Products / parties</div></div>
+  `;
+  const recent = [...documents].sort((a,b)=> new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,6);
+  const box = document.getElementById('recentDocsBox');
+  if(recent.length === 0){
+    box.innerHTML = `<div class="empty-state"><div class="big">ðŸ§¾</div>No documents yet. Create your first bill or quotation.</div>`;
+    return;
+  }
+  box.innerHTML = `<table class="dtable"><thead><tr><th>No.</th><th>Type</th><th>Date</th><th>Party</th><th>Amount</th><th></th></tr></thead>
+    <tbody>${recent.map(d=>recentRow(d)).join('')}</tbody></table>`;
+}
+function partyNameForDoc(d){
+  return (d.partySnapshot && d.partySnapshot.name) || (parties.find(p=>p._id===d.partyId)||{}).name || '—';
+}
+function recentRow(d){
+  return `<tr>
+    <td>${d.docNumber}</td>
+    <td><span class="pill ${d.type}">${d.type==='invoice'?'Bill':'Quotation'}</span></td>
+    <td>${fmtDate(d.date)}</td>
+    <td>${escapeHtml(partyNameForDoc(d))}</td>
+    <td>${fmtMoney(d.grandTotal)}</td>
+    <td><button class="btn ghost sm" onclick="editDocument('${d._id}')">Open</button></td>
+  </tr>`;
+}
+
+/* =========================================================
+   NEW DOCUMENT FORM
+   ========================================================= */
+function setDocType(type){
+  currentDocType = type;
+  document.querySelectorAll('input[name=docType]').forEach(r=>r.checked = (r.value===type));
+  document.getElementById('newDocTitle').textContent = type==='invoice' ? 'New bill' : 'New quotation';
+  document.getElementById('docNoLabel').textContent = type==='invoice' ? 'Invoice No.' : 'Quotation No.';
+  if(!editingDocId){
+    document.getElementById('f_docNumber').value = previewDocNumber(type);
+  }
+}
+function previewDocNumber(type){
+  if(type==='invoice') return `${settings.invPrefix}-${String(settings.invCounter).padStart(4,'0')}`;
+  return `${settings.qtPrefix}-${String(settings.qtCounter).padStart(4,'0')}`;
+}
+function populatePartyDropdown(){
+  const sel = document.getElementById('f_party');
+  sel.innerHTML = '<option value="">— Select party —</option>' +
+    parties.map(p=>`<option value="${p._id}">${escapeHtml(p.name)}</option>`).join('');
+}
+function onPartySelect(){
+  const id = document.getElementById('f_party').value;
+  const p = parties.find(x=>x._id===id);
+  const box = document.getElementById('partyPreview');
+  if(!p){ box.innerHTML = ''; return; }
+  box.innerHTML = `<b>${escapeHtml(p.name)}</b>${p.gstNo?' Â· GSTIN: '+escapeHtml(p.gstNo):''}${p.email?' Â· '+escapeHtml(p.email):''}${p.address?'<br>'+escapeHtml(p.address):''}`;
+}
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function populateProductOptionsHTML(selectedId){
+  return '<option value="">Custom item</option>' + products.map(p=>
+    `<option value="${p._id}" ${p._id===selectedId?'selected':''}>${escapeHtml(p.name)}</option>`
+  ).join('');
+}
+
+let itemRows = [];
+function blankItem(){ return { productId:'', description:'', hsn:'', qty:1, unit:'pcs', rate:0, disc:0 }; }
+function addItemRow(item){
+  itemRows.push(item || blankItem());
+  renderItemsTable();
+}
+function removeItemRow(idx){
+  itemRows.splice(idx,1);
+  if(itemRows.length===0) itemRows.push(blankItem());
+  renderItemsTable();
+}
+function renderItemsTable(){
+  const body = document.getElementById('itemsBody');
+  body.innerHTML = itemRows.map((it,idx)=>{
+    const amount = lineAmount(it);
+    const pickedProduct = it.productId ? products.find(p=>p._id===it.productId) : null;
+    const searchVal = (it._searchText !== undefined) ? it._searchText : (pickedProduct ? pickedProduct.name : (it.description || ''));
+    return `<tr>
+      <td class="slno-col">${idx+1}</td>
+      <td>
+        <div class="prod-search-wrap">
+          <input
+            class="prod-search-input${searchVal ? ' has-value' : ''}"
+            data-row="${idx}"
+            data-field="prod"
+            placeholder="Search or type product…"
+            value="${escapeHtml(searchVal)}"
+            autocomplete="off"
+            oninput="onProdSearchInput(${idx}, this)"
+            onfocus="onProdSearchFocus(${idx}, this); onInputFocus(this);"
+            onmouseup="onInputMouseUp(this, event)"
+            onblur="onInputBlur(this); onProdSearchBlur(${idx});"
+            onkeydown="onItemInputKeydown(event, ${idx}, 'prod')"
+          >
+          <div class="prod-dropdown" id="prod-dd-${idx}"></div>
+        </div>
+        <input placeholder="Description" data-row="${idx}" data-field="desc" value="${escapeHtml(it.description||'')}" oninput="itemRows[${idx}].description=this.value" onfocus="onInputFocus(this)" onmouseup="onInputMouseUp(this, event)" onblur="onInputBlur(this)" onkeydown="onItemInputKeydown(event, ${idx}, 'desc')">
+        <input placeholder="HSN/SAC (optional)" data-row="${idx}" data-field="hsn" value="${escapeHtml(it.hsn||'')}" style="font-size:11px;color:var(--muted);margin-top:2px;" oninput="itemRows[${idx}].hsn=this.value" onfocus="onInputFocus(this)" onmouseup="onInputMouseUp(this, event)" onblur="onInputBlur(this)" onkeydown="onItemInputKeydown(event, ${idx}, 'hsn')">
+      </td>
+      <td><input class="num-in" data-row="${idx}" data-field="qty" type="number" step="any" value="${it.qty}" oninput="itemRows[${idx}].qty=parseFloat(this.value)||0; updateRowAmount(${idx})" onfocus="onInputFocus(this)" onmouseup="onInputMouseUp(this, event)" onblur="onInputBlur(this)" onkeydown="onItemInputKeydown(event, ${idx}, 'qty')"></td>
+      <td><input data-row="${idx}" data-field="unit" value="${escapeHtml(it.unit||'')}" oninput="itemRows[${idx}].unit=this.value" onfocus="onInputFocus(this)" onmouseup="onInputMouseUp(this, event)" onblur="onInputBlur(this)" onkeydown="onItemInputKeydown(event, ${idx}, 'unit')"></td>
+      <td><input class="num-in" data-row="${idx}" data-field="rate" type="number" step="any" value="${it.rate}" oninput="itemRows[${idx}].rate=parseFloat(this.value)||0; updateRowAmount(${idx})" onfocus="onInputFocus(this)" onmouseup="onInputMouseUp(this, event)" onblur="onInputBlur(this)" onkeydown="onItemInputKeydown(event, ${idx}, 'rate')"></td>
+      <td><input class="num-in" data-row="${idx}" data-field="disc" type="number" step="any" value="${it.disc}" oninput="itemRows[${idx}].disc=parseFloat(this.value)||0; updateRowAmount(${idx})" onfocus="onInputFocus(this)" onmouseup="onInputMouseUp(this, event)" onblur="onInputBlur(this)" onkeydown="onItemInputKeydown(event, ${idx}, 'disc')"></td>
+      <td class="num" id="amt_${idx}">${fmtMoney(amount)}</td>
+      <td class="rm"><button class="rm-btn" onclick="removeItemRow(${idx})" title="Remove row">&times;</button></td>
+    </tr>`;
+  }).join('');
+  recalcTotals();
+}
+function onProductPick(idx, productId){
+  const it = itemRows[idx];
+  it.productId = productId;
+  if(productId){
+    const p = products.find(x=>x._id===productId);
+    if(p){
+      it._searchText = p.name;
+      it.description = p.description || p.name;
+      it.unit = p.unit || 'pcs';
+      it.rate = p.rate || 0;
+      it.hsn = p.hsn || '';
+    }
+  }
+  renderItemsTable();
+}
+
+/* =========================================================
+   PRODUCT SMART SEARCH
+   ========================================================= */
+
+// Normalise a string: lowercase + collapse spaces + remove common separators
+function normStr(s){
+  return String(s||'').toLowerCase().replace(/[\s\-_./]+/g,' ').trim();
+}
+
+// Score a product against a query. Returns an object { exact, partial, score }
+function scoreProduct(p, rawQuery){
+  const q = normStr(rawQuery);
+  if(!q) return null;
+  const tokens = q.split(' ').filter(Boolean);
+  const name = normStr(p.name);
+  const desc = normStr(p.description||'');
+  const combined = name + ' ' + desc;
+
+  // Exact: all tokens present in name or combined text
+  const allInName = tokens.every(t => name.includes(t));
+  const allInCombined = tokens.every(t => combined.includes(t));
+
+  if(!allInCombined) return null; // no match at all
+
+  // Score: prefer name matches, shorter names, starts-with bonus
+  let score = 0;
+  if(allInName) score += 100;
+  if(name.startsWith(q)) score += 50;
+  tokens.forEach(t=>{ if(name.includes(t)) score += 10; });
+  score -= name.length * 0.1; // shorter = better
+
+  return { exact: allInName, score };
+}
+
+// Highlight matching tokens in a string
+function highlightTokens(text, rawQuery){
+  const tokens = normStr(rawQuery).split(' ').filter(Boolean);
+  let out = escapeHtml(text);
+  tokens.forEach(tok=>{
+    const re = new RegExp('(' + tok.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+    out = out.replace(re, '<span class="prod-highlight">$1</span>');
+  });
+  return out;
+}
+
+// Build and show the dropdown for a row
+function renderProdDropdown(idx, query){
+  const dd = document.getElementById('prod-dd-'+idx);
+  if(!dd) return;
+
+  const q = (query||'').trim();
+  if(!q){ dd.classList.remove('open'); dd.innerHTML=''; return; }
+
+  // Score & sort
+  const scored = products.map(p=>({ p, res: scoreProduct(p, q) }))
+    .filter(x=>x.res)
+    .sort((a,b)=>b.res.score - a.res.score);
+
+  const exactMatches = scored.filter(x=>x.res.exact);
+  const suggestions  = scored.filter(x=>!x.res.exact);
+
+  if(scored.length === 0){
+    dd.innerHTML = `<div class="prod-no-result">No products found for "<b>${escapeHtml(q)}</b>".</div>`;
+    dd.classList.add('open');
+    return;
+  }
+
+  const buildItem = ({p}, ddIdx)=>`
+    <div class="prod-item" data-id="${p._id}" data-ddidx="${ddIdx}" onmousedown="pickProdFromSearch(event,${idx},'${p._id}')">
+      <div class="prod-item-name">${highlightTokens(p.name, q)}</div>
+      ${p.unit ? `<span class="prod-item-meta">${escapeHtml(p.unit)}</span>` : ''}
+      ${p.rate ? `<span class="prod-item-rate">₹${fmtMoney(p.rate)}</span>` : ''}
+    </div>`;
+
+  let html = '';
+  if(exactMatches.length){
+    html += `<div class="prod-section-label">Matching Products</div>`;
+    html += exactMatches.map((x,i)=>buildItem(x, i)).join('');
+  }
+  if(suggestions.length){
+    html += `<div class="prod-section-label">You might also want…</div>`;
+    html += suggestions.map((x,i)=>buildItem(x, exactMatches.length+i)).join('');
+  }
+
+  dd.innerHTML = html;
+  dd.classList.add('open');
+  _ddActiveIdx[idx] = -1;
+}
+
+// Keep track of keyboard-active item per row
+const _ddActiveIdx = {};
+
+function onProdSearchInput(idx, inp){
+  const q = inp.value;
+  itemRows[idx]._searchText = q;
+  const p = itemRows[idx].productId ? products.find(x=>x._id===itemRows[idx].productId) : null;
+  if(!p || p.name !== q){
+    itemRows[idx].productId = '';
+    itemRows[idx].description = q;
+    const descInput = document.querySelector(`input[data-row="${idx}"][data-field="desc"]`);
+    if(descInput && (!descInput.value || descInput.value === q.slice(0, -1))){
+      descInput.value = q;
+    }
+  }
+  renderProdDropdown(idx, q);
+}
+
+function onProdSearchFocus(idx, inp){
+  const q = inp.value;
+  if(q) renderProdDropdown(idx, q);
+}
+
+function onProdSearchBlur(idx){
+  setTimeout(()=>{
+    const dd = document.getElementById('prod-dd-'+idx);
+    if(dd && !dd.contains(document.activeElement)){
+      dd.classList.remove('open');
+      dd.innerHTML='';
+    }
+  }, 200);
+}
+
+function onProdSearchKeydown(e, idx){
+  const dd = document.getElementById('prod-dd-'+idx);
+  if(!dd || !dd.classList.contains('open')) return;
+  const items = dd.querySelectorAll('.prod-item');
+  let cur = _ddActiveIdx[idx] !== undefined ? _ddActiveIdx[idx] : -1;
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    cur = Math.min(cur+1, items.length-1);
+    _ddActiveIdx[idx] = cur;
+    items.forEach((el,i)=>el.classList.toggle('active', i===cur));
+    if(items[cur]) items[cur].scrollIntoView({block:'nearest'});
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    cur = Math.max(cur-1, 0);
+    _ddActiveIdx[idx] = cur;
+    items.forEach((el,i)=>el.classList.toggle('active', i===cur));
+    if(items[cur]) items[cur].scrollIntoView({block:'nearest'});
+  } else if(e.key==='Enter'){
+    e.preventDefault();
+    if(cur < 0 && items.length > 0) cur = 0;
+    if(cur >= 0 && items[cur]){
+      const productId = items[cur].dataset.id;
+      pickProdFromSearch(null, idx, productId);
+    }
+  } else if(e.key==='Escape'){
+    dd.classList.remove('open'); dd.innerHTML='';
+  }
+}
+
+function pickProdFromSearch(e, idx, productId){
+  if(e){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const dd = document.getElementById('prod-dd-'+idx);
+  if(dd){ dd.classList.remove('open'); dd.innerHTML=''; }
+  onProductPick(idx, productId);
+  setTimeout(()=>{
+    const qtyInp = document.querySelector(`input[data-row="${idx}"][data-field="qty"]`);
+    if(qtyInp){
+      qtyInp.focus();
+      qtyInp.select();
+    }
+  }, 40);
+}
+
+/* =========================================================
+   KEYBOARD NAVIGATION & AUTO-SELECT FOR ITEM TABLE
+   ========================================================= */
+
+function onInputFocus(el){
+  el.select();
+}
+
+function onInputMouseUp(el, e){
+  if(!el._hasSelected){
+    el._hasSelected = true;
+    el.select();
+  }
+}
+
+function onInputBlur(el){
+  el._hasSelected = false;
+}
+
+function focusItemField(idx, field){
+  if(idx >= itemRows.length){
+    addItemRow();
+    idx = itemRows.length - 1;
+  }
+  setTimeout(()=>{
+    const el = document.querySelector(`input[data-row="${idx}"][data-field="${field}"]`);
+    if(el){
+      el.focus();
+      el.select();
+    }
+  }, 40);
+}
+
+function isInputAllSelected(el){
+  try{
+    return el.selectionStart === 0 && el.selectionEnd === el.value.length;
+  }catch(e){ return false; }
+}
+
+function canMoveLeft(el){
+  try{
+    if(isInputAllSelected(el)) return true;
+    return el.selectionStart === 0 && el.selectionEnd === 0;
+  }catch(e){ return true; }
+}
+
+function canMoveRight(el){
+  try{
+    if(isInputAllSelected(el)) return true;
+    return el.selectionStart === el.value.length && el.selectionEnd === el.value.length;
+  }catch(e){ return true; }
+}
+
+function onItemInputKeydown(e, idx, field){
+  // 0. Handle open dropdown in prod input
+  if(field === 'prod'){
+    const dd = document.getElementById('prod-dd-' + idx);
+    const isOpen = dd && dd.classList.contains('open');
+    if(isOpen){
+      const items = dd.querySelectorAll('.prod-item');
+      if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+        onProdSearchKeydown(e, idx);
+        return;
+      }
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        let cur = _ddActiveIdx[idx] !== undefined ? _ddActiveIdx[idx] : -1;
+        if(cur < 0 && items.length > 0) cur = 0;
+        if(cur >= 0 && items[cur]){
+          const prodId = items[cur].dataset.id;
+          pickProdFromSearch(null, idx, prodId);
+          return;
+        }
+      }
+      if(e.key === 'Escape'){
+        dd.classList.remove('open');
+        dd.innerHTML = '';
+        return;
+      }
+    }
+  }
+
+  // 1. Enter key -> next row
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    if(field === 'prod' || field === 'qty' || field === 'rate' || field === 'disc'){
+      focusItemField(idx + 1, 'prod');
+    } else if(field === 'desc' || field === 'hsn' || field === 'unit'){
+      focusItemField(idx, 'qty');
+    }
+    return;
+  }
+
+  // 2. Arrow Down -> next row same column
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    if(field === 'desc'){
+      focusItemField(idx, 'hsn');
+    } else if(field === 'hsn'){
+      focusItemField(idx + 1, 'prod');
+    } else {
+      focusItemField(idx + 1, field);
+    }
+    return;
+  }
+
+  // 3. Arrow Up -> previous row same column
+  if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    if(field === 'hsn'){
+      focusItemField(idx, 'desc');
+    } else if(field === 'desc'){
+      focusItemField(idx, 'prod');
+    } else if(idx > 0){
+      focusItemField(idx - 1, field);
+    }
+    return;
+  }
+
+  // 4. Arrow Right -> next field
+  if(e.key === 'ArrowRight'){
+    if(canMoveRight(e.target)){
+      e.preventDefault();
+      if(field === 'prod' || field === 'desc' || field === 'hsn'){
+        focusItemField(idx, 'qty');
+      } else if(field === 'qty'){
+        focusItemField(idx, 'unit');
+      } else if(field === 'unit'){
+        focusItemField(idx, 'rate');
+      } else if(field === 'rate'){
+        focusItemField(idx, 'disc');
+      } else if(field === 'disc'){
+        focusItemField(idx + 1, 'prod');
+      }
+    }
+    return;
+  }
+
+  // 5. Arrow Left -> previous field
+  if(e.key === 'ArrowLeft'){
+    if(canMoveLeft(e.target)){
+      e.preventDefault();
+      if(field === 'disc'){
+        focusItemField(idx, 'rate');
+      } else if(field === 'rate'){
+        focusItemField(idx, 'unit');
+      } else if(field === 'unit'){
+        focusItemField(idx, 'qty');
+      } else if(field === 'qty'){
+        focusItemField(idx, 'prod');
+      } else if(field === 'prod' && idx > 0){
+        focusItemField(idx - 1, 'disc');
+      }
+    }
+    return;
+  }
+}
+
+function updateRowAmount(idx){
+  const amt = lineAmount(itemRows[idx]);
+  const cell = document.getElementById('amt_'+idx);
+  if(cell) cell.textContent = fmtMoney(amt);
+  recalcTotals();
+}
+function lineAmount(it){
+  const base = (it.qty||0) * (it.rate||0);
+  const disc = base * ((it.disc||0)/100);
+  return Math.max(0, base - disc);
+}
+function currentGstRate(){
+  const sel = document.getElementById('f_gstRate').value;
+  if(sel === 'custom'){
+    return parseFloat(document.getElementById('f_gstCustom').value) || 0;
+  }
+  return parseFloat(sel) || 0;
+}
+document.getElementById('f_gstRate').addEventListener('change', function(){
+  document.getElementById('f_gstCustom').style.display = this.value==='custom' ? 'inline-block' : 'none';
+});
+
+function recalcTotals(){
+  const subtotal = itemRows.reduce((s,it)=>s+lineAmount(it),0);
+  const mode = (document.querySelector('input[name=gstMode]:checked')||{}).value || 'none';
+  const rate = currentGstRate();
+  let cgst=0, sgst=0, igst=0;
+  document.getElementById('row_cgst').style.display = mode==='split' ? '' : 'none';
+  document.getElementById('row_sgst').style.display = mode==='split' ? '' : 'none';
+  document.getElementById('row_igst').style.display = mode==='igst' ? '' : 'none';
+  document.getElementById('f_gstRate').parentElement.style.display = mode==='none' ? 'none' : 'inline';
+  if(mode==='split'){
+    cgst = subtotal * (rate/2) / 100;
+    sgst = subtotal * (rate/2) / 100;
+    document.getElementById('lbl_cgst').textContent = `CGST @ ${(rate/2).toFixed(2)}%`;
+    document.getElementById('lbl_sgst').textContent = `SGST @ ${(rate/2).toFixed(2)}%`;
+  } else if(mode==='igst'){
+    igst = subtotal * rate / 100;
+  }
+  const preRound = subtotal + cgst + sgst + igst;
+  const grand = Math.round(preRound);
+  const roundOff = grand - preRound;
+
+  document.getElementById('t_subtotal').textContent = fmtMoney(subtotal);
+  document.getElementById('t_cgst').textContent = fmtMoney(cgst);
+  document.getElementById('t_sgst').textContent = fmtMoney(sgst);
+  document.getElementById('t_igst').textContent = fmtMoney(igst);
+  document.getElementById('t_round').textContent = fmtMoney(roundOff);
+  document.getElementById('t_grand').textContent = fmtMoney(grand);
+  document.getElementById('amountWords').textContent = 'Amount in words: Rupees ' + capitalizeWords(numberToWordsIndian(grand)) + ' Only';
+
+  return {subtotal, mode, rate, cgst, sgst, igst, roundOff, grand};
+}
+
+function clearForm(resetType){
+  editingDocId = null;
+  document.getElementById('f_docNumber').value = previewDocNumber(currentDocType);
+  document.getElementById('f_date').value = todayISO();
+  document.getElementById('f_deliveryNote').value = '';
+  document.getElementById('f_terms').value = '';
+  document.getElementById('f_party').value = '';
+  onPartySelect();
+  itemRows = [blankItem()];
+  renderItemsTable();
+  document.querySelector('input[name=gstMode][value=split]').checked = true;
+  document.getElementById('f_gstRate').value = '12';
+  document.getElementById('f_gstCustom').style.display = 'none';
+  if(resetType) setDocType('invoice');
+  recalcTotals();
+}
+
+function collectDocFromForm(){
+  const t = recalcTotals();
+  return {
+    type: currentDocType,
+    docNumber: document.getElementById('f_docNumber').value.trim(),
+    date: document.getElementById('f_date').value || todayISO(),
+    deliveryNote: document.getElementById('f_deliveryNote').value.trim(),
+    terms: document.getElementById('f_terms').value.trim(),
+    partyId: document.getElementById('f_party').value,
+    items: itemRows.filter(it => (it.description||it.productId) && lineAmount(it) >= 0).map((it,i)=>({
+      slNo: i+1, productId: it.productId || null, description: it.description, hsn: it.hsn||'', qty: it.qty, unit: it.unit,
+      rate: it.rate, disc: it.disc, amount: lineAmount(it)
+    })),
+    subtotal: t.subtotal, gstMode: t.mode, gstRate: t.rate,
+    cgst: t.cgst, sgst: t.sgst, igst: t.igst, roundOff: t.roundOff, grandTotal: t.grand
+  };
+}
+
+async function saveDocument(){
+  const doc = collectDocFromForm();
+  if(!doc.docNumber){ showToast('Please enter a document number'); return; }
+  if(!doc.partyId){ showToast('Please select a party'); return; }
+  if(doc.items.length===0){ showToast('Please add at least one item'); return; }
+
+  try{
+    let saved;
+    if(editingDocId){
+      saved = await apiPut('/documents/'+editingDocId, doc);
+    } else {
+      saved = await apiPost('/documents', doc);
+    }
+    // Re-sync from the server so counters/snapshots reflect what's really stored.
+    [documents, settings] = await Promise.all([apiGet('/documents'), apiGet('/settings')]);
+    editingDocId = saved._id;
+    showToast(doc.type==='invoice' ? 'Bill saved' : 'Quotation saved');
+    switchTab('saved');
+  }catch(err){
+    showToast(err.message || 'Could not save the document');
+  }
+}
+
+function editDocument(id){
+  const doc = documents.find(d=>d._id===id);
+  if(!doc) return;
+  editingDocId = doc._id;
+  currentDocType = doc.type;
+  switchTab('newdoc');
+  setDocType(doc.type);
+  document.getElementById('f_docNumber').value = doc.docNumber;
+  document.getElementById('f_date').value = doc.date;
+  document.getElementById('f_deliveryNote').value = doc.deliveryNote||'';
+  document.getElementById('f_terms').value = doc.terms||'';
+  document.getElementById('f_party').value = doc.partyId||'';
+  onPartySelect();
+  itemRows = doc.items.map(it=>({productId:it.productId||'', description:it.description, hsn:it.hsn||'', qty:it.qty, unit:it.unit, rate:it.rate, disc:it.disc}));
+  if(itemRows.length===0) itemRows=[blankItem()];
+  renderItemsTable();
+  document.querySelector(`input[name=gstMode][value=${doc.gstMode==='none'?'none':(doc.gstMode==='igst'?'igst':'split')}]`).checked = true;
+  const knownRates = ['0','5','8','12','18','28'];
+  if(knownRates.includes(String(doc.gstRate))){
+    document.getElementById('f_gstRate').value = String(doc.gstRate);
+    document.getElementById('f_gstCustom').style.display = 'none';
+  } else {
+    document.getElementById('f_gstRate').value = 'custom';
+    document.getElementById('f_gstCustom').value = doc.gstRate;
+    document.getElementById('f_gstCustom').style.display = 'inline-block';
+  }
+  recalcTotals();
+}
+
+async function deleteDocument(id){
+  if(!confirm('Delete this document? This cannot be undone.')) return;
+  try{
+    await apiDelete('/documents/'+id);
+    documents = documents.filter(d=>d._id!==id);
+    showToast('Deleted');
+    renderSavedTab();
+    renderDashboard();
+  }catch(err){
+    showToast(err.message || 'Could not delete');
+  }
+}
+
+/* =========================================================
+   SAVED DOCS TAB
+   ========================================================= */
+function renderSavedTab(){
+  const q = (document.getElementById('searchDocs').value||'').toLowerCase();
+  const filter = document.getElementById('filterType').value;
+  let list = [...documents].sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  if(filter !== 'all') list = list.filter(d=>d.type===filter);
+  if(q){
+    list = list.filter(d=>{
+      const name = partyNameForDoc(d).toLowerCase();
+      return d.docNumber.toLowerCase().includes(q) || name.includes(q);
+    });
+  }
+  const body = document.getElementById('savedBody');
+  const empty = document.getElementById('savedEmpty');
+  if(list.length===0){
+    body.innerHTML = '';
+    empty.innerHTML = `<div class="empty-state"><div class="big">ðŸ“„</div>No documents found.</div>`;
+    return;
+  }
+  empty.innerHTML = '';
+  body.innerHTML = list.map(d=>{
+    return `<tr>
+      <td>${d.docNumber}</td>
+      <td><span class="pill ${d.type}">${d.type==='invoice'?'Bill':'Quotation'}</span></td>
+      <td>${fmtDate(d.date)}</td>
+      <td>${escapeHtml(partyNameForDoc(d))}</td>
+      <td>${fmtMoney(d.grandTotal)}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn ghost sm" onclick="editDocument('${d._id}')">Edit</button>
+        <button class="btn ghost sm" onclick="printSavedDoc('${d._id}')">Print</button>
+        <button class="btn ghost sm" onclick="pdfSavedDoc('${d._id}')">PDF</button>
+        <button class="btn danger sm" onclick="deleteDocument('${d._id}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function printSavedDoc(id){
+  const doc = documents.find(d=>d._id===id);
+  if(doc) showPreview(doc);
+}
+function pdfSavedDoc(id){
+  const doc = documents.find(d=>d._id===id);
+  if(doc) showPreview(doc);
+}
+
+/* =========================================================
+   PRODUCTS TAB
+   ========================================================= */
+function renderProductsTab(){
+  const body = document.getElementById('productsBody');
+  const empty = document.getElementById('productsEmpty');
+  if(products.length===0){
+    body.innerHTML='';
+    empty.innerHTML = `<div class="empty-state"><div class="big">ðŸ“¦</div>No products yet. Add the crochet items you sell.</div>`;
+    return;
+  }
+  empty.innerHTML='';
+  body.innerHTML = products.map(p=>`<tr>
+    <td>${escapeHtml(p.name)}</td>
+    <td>${escapeHtml(p.description||'')}</td>
+    <td>${escapeHtml(p.unit||'')}</td>
+    <td>${fmtMoney(p.rate||0)}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn ghost sm" onclick="openProductModal('${p._id}')">Edit</button>
+      <button class="btn danger sm" onclick="deleteProduct('${p._id}')">Delete</button>
+    </td>
+  </tr>`).join('');
+}
+function openProductModal(id){
+  editingProductId = id;
+  document.getElementById('productModalTitle').textContent = id ? 'Edit product' : 'Add product';
+  const p = id ? products.find(x=>x._id===id) : null;
+  document.getElementById('pm_name').value = p ? p.name : '';
+  document.getElementById('pm_description').value = p ? (p.description||'') : '';
+  document.getElementById('pm_unit').value = p ? (p.unit||'pcs') : 'pcs';
+  document.getElementById('pm_rate').value = p ? (p.rate||0) : '';
+  document.getElementById('pm_hsn').value = p ? (p.hsn||'') : '';
+  document.getElementById('productModalBackdrop').classList.add('open');
+}
+function closeProductModal(){ document.getElementById('productModalBackdrop').classList.remove('open'); }
+async function saveProductModal(){
+  const name = document.getElementById('pm_name').value.trim();
+  if(!name){ showToast('Enter a product name'); return; }
+  const data = {
+    name,
+    description: document.getElementById('pm_description').value.trim(),
+    unit: document.getElementById('pm_unit').value.trim() || 'pcs',
+    rate: parseFloat(document.getElementById('pm_rate').value) || 0,
+    hsn: document.getElementById('pm_hsn').value.trim()
+  };
+  try{
+    if(editingProductId) await apiPut('/products/'+editingProductId, data);
+    else await apiPost('/products', data);
+    products = await apiGet('/products');
+    closeProductModal();
+    renderProductsTab();
+    showToast('Product saved');
+  }catch(err){
+    showToast(err.message || 'Could not save product');
+  }
+}
+async function deleteProduct(id){
+  if(!confirm('Remove this product?')) return;
+  try{
+    await apiDelete('/products/'+id);
+    products = products.filter(p=>p._id!==id);
+    renderProductsTab();
+  }catch(err){
+    showToast(err.message || 'Could not delete product');
+  }
+}
+
+/* =========================================================
+   PARTIES TAB
+   ========================================================= */
+function renderPartiesTab(){
+  const body = document.getElementById('partiesBody');
+  const empty = document.getElementById('partiesEmpty');
+  if(parties.length===0){
+    body.innerHTML='';
+    empty.innerHTML = `<div class="empty-state"><div class="big">ðŸ‘¥</div>No parties yet. Add your buyers here.</div>`;
+    return;
+  }
+  empty.innerHTML='';
+  body.innerHTML = parties.map(p=>`<tr>
+    <td>${escapeHtml(p.name)}</td>
+    <td>${escapeHtml(p.gstNo||'')}</td>
+    <td>${escapeHtml(p.email||'')}</td>
+    <td>${escapeHtml(p.phone||'')}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn ghost sm" onclick="openPartyModal('${p._id}')">Edit</button>
+      <button class="btn danger sm" onclick="deleteParty('${p._id}')">Delete</button>
+    </td>
+  </tr>`).join('');
+}
+function openPartyModal(id){
+  editingPartyId = id;
+  document.getElementById('partyModalTitle').textContent = id ? 'Edit party' : 'Add party';
+  const p = id ? parties.find(x=>x._id===id) : null;
+  document.getElementById('pt_name').value = p ? p.name : '';
+  document.getElementById('pt_gst').value = p ? (p.gstNo||'') : '';
+  document.getElementById('pt_phone').value = p ? (p.phone||'') : '';
+  document.getElementById('pt_email').value = p ? (p.email||'') : '';
+  document.getElementById('pt_address').value = p ? (p.address||'') : '';
+  document.getElementById('partyModalBackdrop').classList.add('open');
+}
+function closePartyModal(){ document.getElementById('partyModalBackdrop').classList.remove('open'); }
+async function savePartyModal(){
+  const name = document.getElementById('pt_name').value.trim();
+  if(!name){ showToast('Enter a party name'); return; }
+  const data = {
+    name,
+    gstNo: document.getElementById('pt_gst').value.trim(),
+    phone: document.getElementById('pt_phone').value.trim(),
+    email: document.getElementById('pt_email').value.trim(),
+    address: document.getElementById('pt_address').value.trim()
+  };
+  try{
+    let saved;
+    if(editingPartyId) saved = await apiPut('/parties/'+editingPartyId, data);
+    else saved = await apiPost('/parties', data);
+    parties = await apiGet('/parties');
+    closePartyModal();
+    renderPartiesTab();
+    populatePartyDropdown();
+    document.getElementById('f_party').value = saved._id;
+    onPartySelect();
+    showToast('Party saved');
+  }catch(err){
+    showToast(err.message || 'Could not save party');
+  }
+}
+async function deleteParty(id){
+  if(!confirm('Remove this party?')) return;
+  try{
+    await apiDelete('/parties/'+id);
+    parties = parties.filter(p=>p._id!==id);
+    renderPartiesTab();
+    populatePartyDropdown();
+  }catch(err){
+    showToast(err.message || 'Could not delete party');
+  }
+}
+
+/* =========================================================
+   SETTINGS TAB
+   ========================================================= */
+function fillSettingsForm(){
+  document.getElementById('s_companyName').value = settings.companyName||'';
+  document.getElementById('s_gstNo').value = settings.gstNo||'';
+  document.getElementById('s_address').value = settings.address||'';
+  document.getElementById('s_phone').value = settings.phone||'';
+  document.getElementById('s_email').value = settings.email||'';
+  document.getElementById('s_invPrefix').value = settings.invPrefix||'INV';
+  document.getElementById('s_invCounter').value = settings.invCounter||1;
+  document.getElementById('s_qtPrefix').value = settings.qtPrefix||'QT';
+  document.getElementById('s_qtCounter').value = settings.qtCounter||1;
+  document.getElementById('s_bankName').value = settings.bankName||'';
+  document.getElementById('s_accName').value = settings.accName||'';
+  document.getElementById('s_accNo').value = settings.accNo||'';
+  document.getElementById('s_ifsc').value = settings.ifsc||'';
+  document.getElementById('s_branch').value = settings.branch||'';
+  document.getElementById('s_upi').value = settings.upi||'';
+  document.getElementById('s_jurisdiction').value = settings.jurisdiction||'';
+  const tplSel = document.getElementById('s_template');
+  tplSel.innerHTML = TEMPLATES.map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  tplSel.value = settings.template || 'classic';
+}
+async function saveSettingsForm(){
+  const data = {
+    companyName: document.getElementById('s_companyName').value.trim() || 'My Business',
+    gstNo: document.getElementById('s_gstNo').value.trim(),
+    address: document.getElementById('s_address').value.trim(),
+    phone: document.getElementById('s_phone').value.trim(),
+    email: document.getElementById('s_email').value.trim(),
+    invPrefix: document.getElementById('s_invPrefix').value.trim() || 'INV',
+    invCounter: parseInt(document.getElementById('s_invCounter').value) || 1,
+    qtPrefix: document.getElementById('s_qtPrefix').value.trim() || 'QT',
+    qtCounter: parseInt(document.getElementById('s_qtCounter').value) || 1,
+    bankName: document.getElementById('s_bankName').value.trim(),
+    accName: document.getElementById('s_accName').value.trim(),
+    accNo: document.getElementById('s_accNo').value.trim(),
+    ifsc: document.getElementById('s_ifsc').value.trim(),
+    branch: document.getElementById('s_branch').value.trim(),
+    upi: document.getElementById('s_upi').value.trim(),
+    jurisdiction: document.getElementById('s_jurisdiction').value.trim(),
+    template: document.getElementById('s_template').value || 'classic'
+  };
+  try{
+    settings = await apiPut('/settings', data);
+    document.getElementById('brandName').textContent = settings.companyName || 'Bellavo Billing';
+    showToast('Settings saved');
+  }catch(err){
+    showToast(err.message || 'Could not save settings');
+  }
+}
+
+/* =========================================================
+   PRINT / PDF DOCUMENT RENDERING — multiple selectable templates
+   ========================================================= */
+const TEMPLATES = [
+  { id: 'classic', name: 'Classic Tally (Serif)' },
+  { id: 'gst',     name: 'GST Detailed (with HSN/SAC)' },
+  { id: 'modern',  name: 'Modern Minimal' },
+  { id: 'compact', name: 'Compact Simple' },
+  { id: 'bold',    name: 'Bold Header' },
+  { id: 'ledger',  name: 'Classic Ledger' }
+];
+
+// Structural rules shared by every template — sizing, table basics. No
+// fonts/colors/borders here; each template supplies those under its own
+// .doc-tpl-<id> scope so switching templates can't bleed into another.
+const PAGE_PX = 1123;
+const SHARED_DOC_CSS = `
+.doc-sheet{display:flex;flex-direction:column;gap:18px;width:794px;}
+.doc-page{
+  width:794px;height:1123px;min-height:1123px;max-height:1123px;
+  background:#fff;padding:24px 28px;box-sizing:border-box;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.doc-page *{box-sizing:border-box;}
+.doc-page .doc-bottom{margin-top:auto;}
+table.pitems{width:100%;border-collapse:collapse;}
+table.pitems td.c{text-align:center;}
+table.pitems td.r, .ptot-row td.r{text-align:right;font-variant-numeric:tabular-nums;}
+table.pitems tr{page-break-inside:avoid;break-inside:avoid;}
+.continue-line td{font-style:italic;text-align:right;padding:5px 8px;}
+.page-no{text-align:center;font-size:9px;color:#555;padding-top:4px;}
+.sign-box{margin-top:8px;}
+.sign-line{margin-top:20px;}
+`;
+
+const TPL_CSS = {
+classic: `
+.doc-tpl-classic .doc-page{font-family:"Georgia","Times New Roman",serif;font-size:11.5px;color:#111;}
+.doc-tpl-classic .doc-border{border:1.4px solid #111;}
+.doc-tpl-classic .doc-head{display:flex;justify-content:space-between;border-bottom:1.2px solid #111;padding:8px 12px;}
+.doc-tpl-classic .co-name{font-size:17px;font-weight:700;letter-spacing:.2px;}
+.doc-tpl-classic .co-sub{font-size:10.5px;margin-top:2px;line-height:1.35;font-family:Arial,sans-serif;}
+.doc-tpl-classic .doc-type{font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;border:1.2px solid #111;padding:4px 12px;align-self:flex-start;text-transform:uppercase;}
+.doc-tpl-classic .doc-meta{display:flex;border-bottom:1.2px solid #111;font-family:Arial,sans-serif;font-size:10.5px;}
+.doc-tpl-classic .doc-meta .half{flex:1;padding:7px 12px;}
+.doc-tpl-classic .doc-meta .half:first-child{border-right:1.2px solid #111;}
+.doc-tpl-classic .m-title{font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#333;margin-bottom:3px;}
+.doc-tpl-classic .m-row{display:flex;justify-content:space-between;margin-bottom:2px;}
+.doc-tpl-classic .m-row span:first-child{color:#333;}
+.doc-tpl-classic table.pitems{font-family:Arial,sans-serif;font-size:10.5px;}
+.doc-tpl-classic table.pitems th{border:1.2px solid #111;background:#F0F0EE;padding:4px 5px;font-size:9.5px;text-transform:uppercase;letter-spacing:.2px;}
+.doc-tpl-classic table.pitems td{border:1.2px solid #111;padding:4px 5px;}
+.doc-tpl-classic .ptot-row td{border:1.2px solid #111;padding:3px 6px;font-family:Arial,sans-serif;font-size:10.5px;}
+.doc-tpl-classic .ptot-row.grand td{font-weight:700;font-size:11.5px;}
+.doc-tpl-classic .words-row{border:1.2px solid #111;border-top:none;padding:5px 10px;font-family:Arial,sans-serif;font-size:10.5px;}
+.doc-tpl-classic .words-row b{font-size:9.5px;text-transform:uppercase;letter-spacing:.3px;}
+.doc-tpl-classic .foot-grid{display:flex;border:1.2px solid #111;border-top:none;font-family:Arial,sans-serif;font-size:10px;}
+.doc-tpl-classic .foot-grid .half{flex:1;padding:7px 12px;}
+.doc-tpl-classic .foot-grid .half:first-child{border-right:1.2px solid #111;}
+.doc-tpl-classic .f-title{font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;color:#333;}
+`,
+gst: `
+.doc-tpl-gst .doc-page{font-family:Arial,Helvetica,sans-serif;font-size:10.5px;color:#111;}
+.doc-tpl-gst .doc-border{border:1.4px solid #111;}
+.doc-tpl-gst .doc-head{display:flex;justify-content:space-between;border-bottom:1.2px solid #111;padding:7px 12px;}
+.doc-tpl-gst .co-name{font-size:14px;font-weight:700;}
+.doc-tpl-gst .co-sub{font-size:9.5px;margin-top:2px;line-height:1.35;}
+.doc-tpl-gst .doc-type{font-size:13px;font-weight:700;text-align:center;border-bottom:1.2px solid #111;padding:4px;}
+.doc-tpl-gst .doc-meta{display:flex;border-bottom:1.2px solid #111;font-size:9.5px;}
+.doc-tpl-gst .doc-meta .half{flex:1;padding:6px 12px;}
+.doc-tpl-gst .doc-meta .half:first-child{border-right:1.2px solid #111;}
+.doc-tpl-gst .m-title{font-weight:700;font-size:8.5px;text-transform:uppercase;margin-bottom:2px;}
+.doc-tpl-gst .m-row{display:flex;justify-content:space-between;margin-bottom:2px;}
+.doc-tpl-gst table.pitems{font-size:9.5px;}
+.doc-tpl-gst table.pitems th{border:1.2px solid #111;background:#fff;padding:3px 4px;font-size:8.5px;font-weight:700;}
+.doc-tpl-gst table.pitems td{border:1.2px solid #111;padding:3px 4px;}
+.doc-tpl-gst table.pitems td.tax-label{font-style:italic;}
+.doc-tpl-gst .words-row{border:1.2px solid #111;border-top:none;padding:5px 9px;font-size:9.5px;display:flex;justify-content:space-between;gap:10px;}
+.doc-tpl-gst .words-row b{font-size:8.5px;text-transform:uppercase;}
+.doc-tpl-gst table.taxsummary{width:100%;border-collapse:collapse;font-size:9px;margin-top:-1px;}
+.doc-tpl-gst table.taxsummary th, .doc-tpl-gst table.taxsummary td{border:1.2px solid #111;padding:3px 5px;text-align:center;}
+.doc-tpl-gst table.taxsummary td.l{text-align:left;}
+.doc-tpl-gst .foot-grid{display:flex;border:1.2px solid #111;border-top:none;font-size:9px;}
+.doc-tpl-gst .foot-grid .half{flex:1;padding:5px 12px;}
+.doc-tpl-gst .foot-grid .half:first-child{border-right:1.2px solid #111;}
+.doc-tpl-gst .f-title{font-weight:700;font-size:8px;text-transform:uppercase;margin-bottom:2px;}
+`,
+modern: `
+.doc-tpl-modern .doc-page{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#20303f;}
+.doc-tpl-modern .doc-border{border:1px solid #D7DEE8;}
+.doc-tpl-modern .doc-head{display:flex;justify-content:space-between;align-items:center;background:#0E7C6B;color:#fff;padding:12px 16px;}
+.doc-tpl-modern .co-name{font-size:18px;font-weight:700;letter-spacing:.3px;}
+.doc-tpl-modern .co-sub{font-size:10px;margin-top:2px;line-height:1.35;opacity:.92;}
+.doc-tpl-modern .doc-type{font-size:11px;font-weight:700;letter-spacing:2px;border:1.4px solid rgba(255,255,255,.7);padding:5px 14px;border-radius:20px;text-transform:uppercase;}
+.doc-tpl-modern .doc-meta{display:flex;border-bottom:1px solid #E2E8F0;font-size:10.5px;}
+.doc-tpl-modern .doc-meta .half{flex:1;padding:9px 16px;}
+.doc-tpl-modern .doc-meta .half:first-child{border-right:1px solid #E2E8F0;}
+.doc-tpl-modern .m-title{font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:#0E7C6B;margin-bottom:3px;}
+.doc-tpl-modern .m-row{display:flex;justify-content:space-between;margin-bottom:2px;color:#425466;}
+.doc-tpl-modern .m-row span:first-child{color:#8895A7;}
+.doc-tpl-modern table.pitems{font-size:10.5px;}
+.doc-tpl-modern table.pitems th{border:none;border-bottom:2px solid #0E7C6B;background:#F4FAF8;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#0E7C6B;}
+.doc-tpl-modern table.pitems td{border:none;border-bottom:1px solid #EEF1F5;padding:4px 6px;}
+.doc-tpl-modern .ptot-row td{border:none;padding:3px 8px;font-size:10.5px;}
+.doc-tpl-modern .ptot-row.grand td{font-weight:700;font-size:12px;color:#0E7C6B;border-top:2px solid #0E7C6B;padding-top:6px;}
+.doc-tpl-modern .words-row{border:none;background:#F4FAF8;padding:6px 10px;font-size:10.5px;border-radius:6px;margin-top:2px;}
+.doc-tpl-modern .words-row b{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#0E7C6B;}
+.doc-tpl-modern .foot-grid{display:flex;border:none;border-top:1px solid #E2E8F0;font-size:10px;margin-top:6px;padding-top:6px;}
+.doc-tpl-modern .foot-grid .half{flex:1;padding:5px 14px;}
+.doc-tpl-modern .foot-grid .half:first-child{border-right:1px solid #E2E8F0;}
+.doc-tpl-modern .f-title{font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;color:#0E7C6B;}
+`,
+compact: `
+.doc-tpl-compact .doc-page{font-family:Arial,Helvetica,sans-serif;font-size:10.5px;color:#1a1a1a;padding:20px 24px;}
+.doc-tpl-compact .doc-border{border:1px solid #444;}
+.doc-tpl-compact .doc-head{display:flex;justify-content:space-between;border-bottom:1px solid #444;padding:6px 10px;}
+.doc-tpl-compact .co-name{font-size:14px;font-weight:700;}
+.doc-tpl-compact .co-sub{font-size:9px;margin-top:2px;line-height:1.3;}
+.doc-tpl-compact .doc-type{font-size:9.5px;font-weight:700;letter-spacing:.8px;border:1px solid #444;padding:3px 8px;align-self:flex-start;text-transform:uppercase;}
+.doc-tpl-compact .doc-meta{display:flex;border-bottom:1px solid #444;font-size:9px;}
+.doc-tpl-compact .doc-meta .half{flex:1;padding:5px 10px;}
+.doc-tpl-compact .doc-meta .half:first-child{border-right:1px solid #444;}
+.doc-tpl-compact .m-title{font-weight:700;font-size:8px;text-transform:uppercase;margin-bottom:2px;}
+.doc-tpl-compact .m-row{display:flex;justify-content:space-between;margin-bottom:1px;}
+.doc-tpl-compact table.pitems{font-size:9px;}
+.doc-tpl-compact table.pitems th{border:1px solid #444;background:#F2F2F2;padding:3px 4px;font-size:8.5px;text-transform:uppercase;}
+.doc-tpl-compact table.pitems td{border:1px solid #444;padding:3px 4px;}
+.doc-tpl-compact .ptot-row td{border:1px solid #444;padding:2px 6px;font-size:9px;}
+.doc-tpl-compact .ptot-row.grand td{font-weight:700;font-size:10px;}
+.doc-tpl-compact .words-row{border:1px solid #444;border-top:none;padding:4px 8px;font-size:9px;}
+.doc-tpl-compact .words-row b{font-size:8.5px;text-transform:uppercase;}
+.doc-tpl-compact .foot-grid{display:flex;border:1px solid #444;border-top:none;font-size:8.5px;}
+.doc-tpl-compact .foot-grid .half{flex:1;padding:5px 10px;}
+.doc-tpl-compact .foot-grid .half:first-child{border-right:1px solid #444;}
+.doc-tpl-compact .f-title{font-weight:700;font-size:8px;text-transform:uppercase;margin-bottom:2px;}
+.doc-tpl-compact .sign-box{margin-top:8px;}
+.doc-tpl-compact .sign-line{margin-top:16px;font-size:8.5px;}
+`,
+bold: `
+.doc-tpl-bold .doc-page{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:11px;color:#111827;}
+.doc-tpl-bold .doc-border{border:1.5px solid #111827;}
+.doc-tpl-bold .doc-head{display:flex;justify-content:space-between;align-items:center;background:#f0f2f5;color:#111827;padding:14px 18px;border-bottom:2px solid #111827;}
+.doc-tpl-bold .co-name{font-size:21px;font-weight:900;letter-spacing:-0.2px;color:#111827;text-transform:uppercase;}
+.doc-tpl-bold .co-sub{font-size:9.5px;margin-top:3px;line-height:1.45;color:#27272a;font-weight:500;}
+.doc-tpl-bold .doc-type{font-size:15px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#111827;background:#ffffff;border:1.5px solid #cbd5e1;padding:5px 14px;border-radius:4px;text-align:center;}
+.doc-tpl-bold .doc-meta{display:flex;border-bottom:1.5px solid #e5e7eb;font-size:10px;background:#ffffff;}
+.doc-tpl-bold .doc-meta .half{flex:1;padding:10px 18px;}
+.doc-tpl-bold .doc-meta .half:first-child{border-right:1px solid #e5e7eb;}
+.doc-tpl-bold .m-title{font-weight:800;font-size:9px;text-transform:uppercase;letter-spacing:0.8px;color:#4b5563;margin-bottom:4px;}
+.doc-tpl-bold .m-row{display:flex;justify-content:space-between;margin-bottom:3px;color:#374151;}
+.doc-tpl-bold .m-row span:first-child{color:#4b5563;font-weight:600;}
+.doc-tpl-bold .m-row span:last-child{color:#111827;font-weight:700;}
+.doc-tpl-bold table.pitems{font-size:10.5px;}
+.doc-tpl-bold table.pitems th{border:none;border-top:2px solid #111827;border-bottom:1.5px solid #111827;background:#f0f2f5;color:#111827;padding:6px 6px;font-size:9px;text-transform:uppercase;letter-spacing:0.6px;font-weight:800;}
+.doc-tpl-bold table.pitems td{border:none;border-bottom:1px solid #f1f5f9;padding:4.5px 6px;color:#1f2937;}
+.doc-tpl-bold table.pitems tr:nth-child(even) td{background:#fafbfc;}
+.doc-tpl-bold .ptot-row td{border:none;padding:3px 8px;font-size:10.5px;color:#374151;}
+.doc-tpl-bold .ptot-row.grand td{font-weight:900;font-size:12.5px;color:#111827;border-top:2px solid #111827;border-bottom:2px solid #111827;background:#f0f2f5;padding:6px 8px;}
+.doc-tpl-bold .words-row{border:1px solid #e5e7eb;border-left:none;border-right:none;background:#f0f2f5;padding:6px 12px;font-size:10px;color:#1f2937;margin-top:2px;}
+.doc-tpl-bold .words-row b{font-size:9px;text-transform:uppercase;letter-spacing:0.6px;color:#111827;}
+.doc-tpl-bold .foot-grid{display:flex;border:none;border-top:1.5px solid #111827;font-size:9.5px;background:#ffffff;margin-top:4px;padding-top:6px;}
+.doc-tpl-bold .foot-grid .half{flex:1;padding:6px 18px;}
+.doc-tpl-bold .foot-grid .half:first-child{border-right:1px solid #e5e7eb;}
+.doc-tpl-bold .f-title{font-weight:800;font-size:8.5px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;color:#4b5563;}
+`,
+ledger: `
+.doc-tpl-ledger .doc-page{font-family:"Courier New",monospace;font-size:10.5px;color:#000;}
+.doc-tpl-ledger .doc-border{border:3px double #000;}
+.doc-tpl-ledger .doc-head{display:flex;justify-content:space-between;border-bottom:3px double #000;padding:8px 14px;}
+.doc-tpl-ledger .co-name{font-size:15px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+.doc-tpl-ledger .co-sub{font-size:9.5px;margin-top:2px;line-height:1.35;}
+.doc-tpl-ledger .doc-type{font-size:11px;font-weight:700;letter-spacing:2px;border:2px solid #000;padding:4px 12px;text-transform:uppercase;}
+.doc-tpl-ledger .doc-meta{display:flex;border-bottom:2px solid #000;font-size:9.5px;}
+.doc-tpl-ledger .doc-meta .half{flex:1;padding:7px 14px;}
+.doc-tpl-ledger .doc-meta .half:first-child{border-right:2px solid #000;}
+.doc-tpl-ledger .m-title{font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;text-decoration:underline;}
+.doc-tpl-ledger .m-row{display:flex;justify-content:space-between;margin-bottom:2px;}
+.doc-tpl-ledger table.pitems{font-size:9.5px;}
+.doc-tpl-ledger table.pitems th{border:2px solid #000;background:#fff;padding:4px 5px;font-size:9px;text-transform:uppercase;font-weight:700;}
+.doc-tpl-ledger table.pitems td{border:1px solid #000;padding:4px 5px;}
+.doc-tpl-ledger table.pitems td.r{font-family:"Courier New",monospace;}
+.doc-tpl-ledger .ptot-row td{border:1px solid #000;padding:3px 6px;font-size:9.5px;font-family:"Courier New",monospace;}
+.doc-tpl-ledger .ptot-row.grand td{font-weight:700;font-size:11px;border-top:3px double #000;}
+.doc-tpl-ledger .words-row{border:2px solid #000;border-top:none;padding:5px 10px;font-size:9.5px;}
+.doc-tpl-ledger .words-row b{font-size:9px;text-transform:uppercase;text-decoration:underline;}
+.doc-tpl-ledger .foot-grid{display:flex;border:2px solid #000;border-top:none;font-size:9px;}
+.doc-tpl-ledger .foot-grid .half{flex:1;padding:6px 14px;}
+.doc-tpl-ledger .foot-grid .half:first-child{border-right:2px solid #000;}
+.doc-tpl-ledger .f-title{font-weight:700;font-size:8.5px;text-transform:uppercase;margin-bottom:3px;text-decoration:underline;}
+`
+};
+
+// Extra chrome only needed when opened standalone in a new tab (the in-app
+// preview modal handles its own centering/scaling instead).
+const POPUP_EXTRA_CSS = `
+body{margin:0;background:#e7eaef;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.doc-sheet{margin:16px auto;}
+.doc-page{margin:0 auto 16px auto;box-shadow:0 2px 10px rgba(0,0,0,.15);}
+.tb{text-align:center;padding:10px;font-family:Arial,sans-serif;}
+.tb button{margin:4px;padding:8px 14px;border-radius:6px;border:1px solid #999;background:#fff;cursor:pointer;font-size:13px;}
+@media print{
+  .tb{display:none;}
+  html,body{margin:0;padding:0;background:#fff;}
+  .doc-sheet{margin:0;gap:0;}
+  .doc-page{box-shadow:none;margin:0;width:210mm;height:297mm;min-height:297mm;max-height:297mm;page-break-after:always;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .doc-page:last-child{page-break-after:auto;break-after:auto;}
+  @page{size:A4;margin:0;}
+}
+`;
+
+// Inject all template CSS once, so both the in-app preview modal and the
+// standalone "open in new tab" page can use the exact same rules.
+(function injectTemplateStyles(){
+  const style = document.createElement('style');
+  style.id = 'tplStyles';
+  style.textContent = SHARED_DOC_CSS + Object.values(TPL_CSS).join('\n');
+  document.head.appendChild(style);
+})();
+
+function docParty(doc){
+  return doc.partySnapshot || parties.find(p=>p._id===doc.partyId) || {};
+}
+function docCompany(doc){
+  return (doc.companySnapshot && Object.keys(doc.companySnapshot).length) ? doc.companySnapshot : settings;
+}
+
+function genericHeaderHTML(doc){
+  const party = docParty(doc);
+  const co = docCompany(doc);
+  const isInvoice = doc.type === 'invoice';
+  return `
+    <div class="doc-head">
+      <div>
+        <div class="co-name">${escapeHtml(co.companyName||'')}</div>
+        <div class="co-sub">
+          ${escapeHtml(co.address||'').replace(/\n/g,'<br>')}<br>
+          ${co.phone?('Phone: '+escapeHtml(co.phone)+' &nbsp; '):''}${co.email?('Email: '+escapeHtml(co.email)):''}<br>
+          ${co.gstNo?('GSTIN: '+escapeHtml(co.gstNo)):''}
+        </div>
+      </div>
+      <div class="doc-type">${isInvoice?'Tax Invoice':'Quotation'}</div>
+    </div>
+    <div class="doc-meta">
+      <div class="half">
+        <div class="m-title">Bill to</div>
+        <div><b>${escapeHtml(party.name||'—')}</b></div>
+        <div>${escapeHtml(party.address||'').replace(/\n/g,'<br>')}</div>
+        ${party.gstNo?`<div>GSTIN: ${escapeHtml(party.gstNo)}</div>`:''}
+        ${party.email?`<div>Email: ${escapeHtml(party.email)}</div>`:''}
+        ${party.phone?`<div>Phone: ${escapeHtml(party.phone)}</div>`:''}
+      </div>
+      <div class="half">
+        <div class="m-row"><span>${isInvoice?'Invoice No.':'Quotation No.'}</span><span>${escapeHtml(doc.docNumber)}</span></div>
+        <div class="m-row"><span>Date</span><span>${fmtDate(doc.date)}</span></div>
+        ${doc.deliveryNote?`<div class="m-row"><span>Delivery note</span><span>${escapeHtml(doc.deliveryNote)}</span></div>`:''}
+        ${doc.terms?`<div class="m-row"><span>Terms</span><span>${escapeHtml(doc.terms)}</span></div>`:''}
+      </div>
+    </div>`;
+}
+
+function genericItemRowsHTML(items){
+  return items.map(it=>`
+    <tr>
+      <td class="c">${it.slNo}</td>
+      <td>${escapeHtml(it.description)}</td>
+      <td class="c">${it.qty}</td>
+      <td class="c">${escapeHtml(it.unit)}</td>
+      <td class="r">${fmtMoney(it.rate)}</td>
+      <td class="c">${it.disc ? it.disc+'%' : '-'}</td>
+      <td class="r">${fmtMoney(it.amount)}</td>
+    </tr>`).join('');
+}
+
+function genericTotalsHTML(doc){
+  const co = docCompany(doc);
+  let gstRowsHTML = '';
+  if(doc.gstMode === 'split'){
+    gstRowsHTML = `
+      <tr class="ptot-row"><td colspan="5"></td><td>CGST @ ${(doc.gstRate/2).toFixed(2)}%</td><td class="r">${fmtMoney(doc.cgst)}</td></tr>
+      <tr class="ptot-row"><td colspan="5"></td><td>SGST @ ${(doc.gstRate/2).toFixed(2)}%</td><td class="r">${fmtMoney(doc.sgst)}</td></tr>`;
+  } else if(doc.gstMode === 'igst'){
+    gstRowsHTML = `<tr class="ptot-row"><td colspan="5"></td><td>IGST @ ${doc.gstRate}%</td><td class="r">${fmtMoney(doc.igst)}</td></tr>`;
+  }
+  return `
+    <table style="width:100%;border-collapse:collapse;">
+      <tr class="ptot-row"><td colspan="5" style="border:none;"></td><td>Subtotal</td><td class="r">${fmtMoney(doc.subtotal)}</td></tr>
+      ${gstRowsHTML}
+      <tr class="ptot-row"><td colspan="5" style="border:none;"></td><td>Round off</td><td class="r">${fmtMoney(doc.roundOff)}</td></tr>
+      <tr class="ptot-row grand"><td colspan="5" style="border:none;"></td><td>Grand total</td><td class="r">${fmtMoney(doc.grandTotal)}</td></tr>
+    </table>
+    <div class="words-row"><b>Amount in words:</b> Rupees ${capitalizeWords(numberToWordsIndian(doc.grandTotal))} Only</div>
+    <div class="foot-grid">
+      <div class="half">
+        <div class="f-title">Bank details</div>
+        ${co.bankName?`<div>Bank: ${escapeHtml(co.bankName)}</div>`:''}
+        ${co.accName?`<div>Account name: ${escapeHtml(co.accName)}</div>`:''}
+        ${co.accNo?`<div>Account no: ${escapeHtml(co.accNo)}</div>`:''}
+        ${co.ifsc?`<div>IFSC: ${escapeHtml(co.ifsc)}</div>`:''}
+        ${co.branch?`<div>Branch: ${escapeHtml(co.branch)}</div>`:''}
+        ${co.upi?`<div>UPI: ${escapeHtml(co.upi)}</div>`:''}
+      </div>
+      <div class="half">
+        <div class="f-title">Terms</div>
+        <div>${escapeHtml(co.jurisdiction||'')}</div>
+        <div class="sign-box">
+          For ${escapeHtml(co.companyName||'')}
+          <div class="sign-line">Authorised Signatory</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function genericFooterHTML(doc){
+  const co = docCompany(doc);
+  return `
+    <div class="foot-grid">
+      <div class="half">
+        <div class="f-title">Bank details</div>
+        ${co.bankName?`<div>Bank: ${escapeHtml(co.bankName)}</div>`:''}
+        ${co.accName?`<div>Account name: ${escapeHtml(co.accName)}</div>`:''}
+        ${co.accNo?`<div>Account no: ${escapeHtml(co.accNo)}</div>`:''}
+        ${co.ifsc?`<div>IFSC: ${escapeHtml(co.ifsc)}</div>`:''}
+        ${co.branch?`<div>Branch: ${escapeHtml(co.branch)}</div>`:''}
+        ${co.upi?`<div>UPI: ${escapeHtml(co.upi)}</div>`:''}
+      </div>
+      <div class="half">
+        <div class="f-title">Terms</div>
+        <div>${escapeHtml(co.jurisdiction||'')}</div>
+        <div class="sign-box">
+          For ${escapeHtml(co.companyName||'')}
+          <div class="sign-line">Authorised Signatory</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function buildGenericPage(doc, itemSlice, opts){
+  const { isLast, pageNo, pageCount, measuring } = opts;
+  const size = measuring
+    ? 'style="height:auto;min-height:0;max-height:none;overflow:visible;"'
+    : '';
+  const continueRow = isLast ? '' : `<tr class="continue-line"><td colspan="7">Continued...</td></tr>`;
+  const bottom = isLast
+    ? genericTotalsHTML(doc)
+    : genericFooterHTML(doc);
+  return `
+  <div class="doc-page doc-border" ${size}>
+    ${genericHeaderHTML(doc)}
+    <table class="pitems">
+      <thead><tr>
+        <th style="width:30px;">Sl</th><th>Description</th><th style="width:55px;">Qty</th>
+        <th style="width:50px;">Unit</th><th style="width:75px;">Rate</th><th style="width:55px;">Disc</th><th style="width:90px;">Amount</th>
+      </tr></thead>
+      <tbody>${genericItemRowsHTML(itemSlice)}${continueRow}</tbody>
+    </table>
+    <div class="doc-bottom">
+      ${bottom}
+      <div class="page-no">Page ${pageNo} of ${pageCount}</div>
+    </div>
+  </div>`;
+}
+
+function gstHeaderHTML(doc){
+  const party = docParty(doc);
+  const co = docCompany(doc);
+  const isInvoice = doc.type === 'invoice';
+  return `
+    <div class="doc-head">
+      <div>
+        <div class="co-name">${escapeHtml(co.companyName||'')}</div>
+        <div class="co-sub">
+          ${escapeHtml(co.address||'').replace(/\n/g,'<br>')}<br>
+          ${co.phone?('Phone: '+escapeHtml(co.phone)+' &nbsp; '):''}${co.email?('Email: '+escapeHtml(co.email)):''}<br>
+          ${co.gstNo?('GSTIN/UIN: '+escapeHtml(co.gstNo)):''}
+        </div>
+      </div>
+    </div>
+    <div class="doc-type">${isInvoice?'Tax Invoice':'Quotation'}</div>
+    <div class="doc-meta">
+      <div class="half">
+        <div class="m-title">Party</div>
+        <div><b>${escapeHtml(party.name||'—')}</b></div>
+        <div>${escapeHtml(party.address||'').replace(/\n/g,'<br>')}</div>
+        ${party.gstNo?`<div>GSTIN/UIN: ${escapeHtml(party.gstNo)}</div>`:''}
+        ${party.email?`<div>Email: ${escapeHtml(party.email)}</div>`:''}
+      </div>
+      <div class="half">
+        <div class="m-row"><span>${isInvoice?'Invoice No.':'Quotation No.'}</span><span>${escapeHtml(doc.docNumber)}</span></div>
+        <div class="m-row"><span>Dated</span><span>${fmtDate(doc.date)}</span></div>
+        ${doc.deliveryNote?`<div class="m-row"><span>Delivery Note</span><span>${escapeHtml(doc.deliveryNote)}</span></div>`:''}
+        ${doc.terms?`<div class="m-row"><span>Terms of Delivery</span><span>${escapeHtml(doc.terms)}</span></div>`:''}
+      </div>
+    </div>`;
+}
+
+function gstItemRowsHTML(items){
+  return items.map(it=>`
+    <tr>
+      <td class="c">${it.slNo}</td>
+      <td>${escapeHtml(it.description)}</td>
+      <td class="c">${escapeHtml(it.hsn||'')}</td>
+      <td class="c">${it.qty}</td>
+      <td class="r">${fmtMoney(it.rate)}</td>
+      <td class="c">${escapeHtml(it.unit)}</td>
+      <td class="r">${fmtMoney(it.amount)}</td>
+    </tr>`).join('');
+}
+
+function gstLastPageExtrasHTML(doc){
+  const co = docCompany(doc);
+  let taxRowsHtml = '';
+  if(doc.gstMode === 'split'){
+    taxRowsHtml = `
+      <tr><td></td><td class="tax-label">Output CGST @ ${(doc.gstRate/2).toFixed(2)}%</td><td></td><td></td><td class="c">${(doc.gstRate/2).toFixed(2)}</td><td class="c">%</td><td class="r">${fmtMoney(doc.cgst)}</td></tr>
+      <tr><td></td><td class="tax-label">Output SGST @ ${(doc.gstRate/2).toFixed(2)}%</td><td></td><td></td><td class="c">${(doc.gstRate/2).toFixed(2)}</td><td class="c">%</td><td class="r">${fmtMoney(doc.sgst)}</td></tr>`;
+  } else if(doc.gstMode === 'igst'){
+    taxRowsHtml = `<tr><td></td><td class="tax-label">Output IGST @ ${doc.gstRate}%</td><td></td><td></td><td class="c">${doc.gstRate}</td><td class="c">%</td><td class="r">${fmtMoney(doc.igst)}</td></tr>`;
+  }
+  const totalQty = (doc.items||[]).reduce((s,it)=>s+(Number(it.qty)||0),0);
+  const commonUnit = (doc.items[0] && doc.items[0].unit) || '';
+  const totalRowHtml = `<tr style="font-weight:700;"><td></td><td style="text-align:right;">Total</td><td></td><td class="c">${totalQty} ${escapeHtml(commonUnit)}</td><td></td><td></td><td class="r">${fmtMoney(doc.grandTotal)}</td></tr>`;
+
+  const hsnGroups = {};
+  (doc.items||[]).forEach(it=>{
+    const key = it.hsn || '—';
+    hsnGroups[key] = (hsnGroups[key]||0) + it.amount;
+  });
+  const isSplit = doc.gstMode === 'split';
+  const taxSummaryRows = Object.entries(hsnGroups).map(([hsn, amt])=>{
+    const cRate = isSplit ? doc.gstRate/2 : (doc.gstMode==='igst' ? doc.gstRate : 0);
+    const sRate = isSplit ? doc.gstRate/2 : 0;
+    const cAmt = amt * cRate / 100;
+    const sAmt = isSplit ? amt * sRate / 100 : 0;
+    return `<tr>
+      <td class="l">${escapeHtml(hsn)}</td>
+      <td>${fmtMoney(amt)}</td>
+      <td>${cRate?cRate.toFixed(2)+'%':'-'}</td>
+      <td>${cRate?fmtMoney(cAmt):'-'}</td>
+      <td>${isSplit?sRate.toFixed(2)+'%':'-'}</td>
+      <td>${isSplit?fmtMoney(sAmt):'-'}</td>
+      <td>${fmtMoney(cAmt+sAmt)}</td>
+    </tr>`;
+  }).join('');
+  const totalTaxAmount = (doc.cgst||0)+(doc.sgst||0)+(doc.igst||0);
+  const taxSummaryTotalRow = `<tr style="font-weight:700;">
+    <td class="l">Total</td><td>${fmtMoney(doc.subtotal)}</td>
+    <td></td><td>${fmtMoney(doc.cgst||0)}</td>
+    <td></td><td>${fmtMoney(doc.sgst||0)}</td>
+    <td>${fmtMoney(totalTaxAmount)}</td>
+  </tr>`;
+
+  return {
+    extraRows: taxRowsHtml + totalRowHtml,
+    footer: `
+      <div class="words-row"><div><b>Amount Chargeable (in words):</b><br>${escapeHtml('INR '+capitalizeWords(numberToWordsIndian(doc.grandTotal))+' Only')}</div><div>E. &amp; O.E</div></div>
+      <table class="taxsummary">
+        <thead>
+          <tr><th rowspan="2">HSN/SAC</th><th rowspan="2">Taxable Value</th><th colspan="2">Central Tax</th><th colspan="2">State Tax</th><th rowspan="2">Total Tax Amount</th></tr>
+          <tr><th>Rate</th><th>Amount</th><th>Rate</th><th>Amount</th></tr>
+        </thead>
+        <tbody>${taxSummaryRows}${taxSummaryTotalRow}</tbody>
+      </table>
+      <div class="words-row"><b>Tax Amount (in words):</b> INR ${capitalizeWords(numberToWordsIndian(totalTaxAmount))} Only</div>
+      <div class="foot-grid">
+        <div class="half">
+          <div class="f-title">Bank details</div>
+          ${co.bankName?`<div>Bank: ${escapeHtml(co.bankName)}</div>`:''}
+          ${co.accName?`<div>Account name: ${escapeHtml(co.accName)}</div>`:''}
+          ${co.accNo?`<div>Account no: ${escapeHtml(co.accNo)}</div>`:''}
+          ${co.ifsc?`<div>IFSC: ${escapeHtml(co.ifsc)}</div>`:''}
+        </div>
+        <div class="half">
+          <div>${escapeHtml(co.jurisdiction||'')}</div>
+          <div class="sign-box">
+            for ${escapeHtml(co.companyName||'')}
+            <div class="sign-line">Authorised Signatory</div>
+          </div>
+        </div>
+      </div>`
+  };
+}
+
+function gstFooterHTML(doc){
+  const co = docCompany(doc);
+  return `
+    <div class="foot-grid">
+      <div class="half">
+        <div class="f-title">Bank details</div>
+        ${co.bankName?`<div>Bank: ${escapeHtml(co.bankName)}</div>`:''}
+        ${co.accName?`<div>Account name: ${escapeHtml(co.accName)}</div>`:''}
+        ${co.accNo?`<div>Account no: ${escapeHtml(co.accNo)}</div>`:''}
+        ${co.ifsc?`<div>IFSC: ${escapeHtml(co.ifsc)}</div>`:''}
+      </div>
+      <div class="half">
+        <div>${escapeHtml(co.jurisdiction||'')}</div>
+        <div class="sign-box">
+          for ${escapeHtml(co.companyName||'')}
+          <div class="sign-line">Authorised Signatory</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function buildGstPage(doc, itemSlice, opts){
+  const { isLast, pageNo, pageCount, measuring } = opts;
+  const size = measuring
+    ? 'style="height:auto;min-height:0;max-height:none;overflow:visible;"'
+    : '';
+  const extras = isLast ? gstLastPageExtrasHTML(doc) : { extraRows: `<tr class="continue-line"><td colspan="7">Continued...</td></tr>`, footer: gstFooterHTML(doc) };
+  return `
+  <div class="doc-page doc-border" ${size}>
+    ${gstHeaderHTML(doc)}
+    <table class="pitems">
+      <thead><tr>
+        <th style="width:26px;">Sl</th><th>Description of Goods</th><th style="width:60px;">HSN/SAC</th>
+        <th style="width:60px;">Quantity</th><th style="width:65px;">Rate</th><th style="width:40px;">per</th><th style="width:80px;">Amount</th>
+      </tr></thead>
+      <tbody>${gstItemRowsHTML(itemSlice)}${extras.extraRows}</tbody>
+    </table>
+    <div class="doc-bottom">
+      ${extras.footer}
+      <div class="page-no">Page ${pageNo} of ${pageCount}</div>
+    </div>
+  </div>`;
+}
+
+function pageBuilderFor(templateId){
+  return templateId === 'gst' ? buildGstPage : buildGenericPage;
+}
+
+function measureHost(templateId){
+  let host = document.getElementById('pageMeasureHost');
+  if(!host){
+    host = document.createElement('div');
+    host.id = 'pageMeasureHost';
+    host.setAttribute('aria-hidden','true');
+    host.style.cssText = 'position:fixed;left:-12000px;top:0;width:794px;pointer-events:none;z-index:-1;';
+    document.body.appendChild(host);
+  }
+  host.className = `doc-tpl-${templateId}`;
+  return host;
+}
+
+function pageFits(templateId, html){
+  const host = measureHost(templateId);
+  host.innerHTML = html;
+  const page = host.querySelector('.doc-page');
+  if(!page) return true;
+  return page.scrollHeight <= PAGE_PX + 1;
+}
+
+function chunkItemsForPages(doc, templateId){
+  const items = Array.isArray(doc.items) ? doc.items : [];
+  const build = pageBuilderFor(templateId);
+  const fits = (slice, isLast) => pageFits(templateId, build(doc, slice, {
+    isLast, pageNo: 1, pageCount: 1, measuring: true
+  }));
+
+  if(items.length === 0) return [[]];
+
+  const chunks = [];
+  let i = 0;
+  let guard = 0;
+  while(i < items.length){
+    if(++guard > 400) break;
+    const rest = items.slice(i);
+    if(fits(rest, true)){
+      chunks.push(rest);
+      break;
+    }
+    let lo = 1, hi = rest.length, best = 0;
+    while(lo <= hi){
+      const mid = Math.floor((lo + hi) / 2);
+      if(fits(rest.slice(0, mid), false)){
+        best = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    if(best <= 0) best = 1;
+    if(best >= rest.length){
+      /* All remaining items fit on a non-last page (no totals) but NOT on
+         a last page (with totals).  Instead of dumping them all here and
+         creating an empty last page that only has totals, we reserve at
+         least 1 item for the final page so every page has content.
+
+         Why this works without hardcoding:
+         • (rest.length - 1) items certainly fit on the current non-last
+           page because rest.length items already fit.
+         • 1 item + totals + footer always fits on an A4 last page
+           (verified by the measurement engine on the next loop iteration
+           via the `fits(rest, true)` check at the top).                 */
+      if(rest.length > 1){
+        chunks.push(rest.slice(0, rest.length - 1));
+        i += rest.length - 1;
+        // Loop continues — next iteration will place the final item on
+        // the last page via the `fits(rest, true)` branch at the top.
+      } else {
+        // Extreme edge: a single item doesn't fit with totals.
+        // Shouldn't happen in practice but fall back gracefully.
+        chunks.push(rest);
+        chunks.push([]);
+        break;
+      }
+      continue;
+    }
+    chunks.push(rest.slice(0, best));
+    i += best;
+  }
+  return chunks.length ? chunks : [[]];
+}
+
+/* The five "simple" templates (classic/modern/compact/bold/ledger) share the
+   exact same markup — Sl/Description/Qty/Unit/Rate/Disc/Amount — and differ
+   purely through the CSS scoped to their .doc-tpl-<id> wrapper above. */
+function buildPrintHTML(doc, templateId){
+  templateId = templateId || (settings && settings.template) || 'classic';
+  if(!TEMPLATES.some(t=>t.id===templateId)) templateId = 'classic';
+  const chunks = chunkItemsForPages(doc, templateId);
+  const build = pageBuilderFor(templateId);
+  const pages = chunks.map((slice, idx) => build(doc, slice, {
+    isLast: idx === chunks.length - 1,
+    pageNo: idx + 1,
+    pageCount: chunks.length,
+    measuring: false
+  })).join('');
+  return `<div class="doc-tpl-${templateId}"><div class="doc-sheet">${pages}</div></div>`;
+}
+
+function standaloneHtml(doc, templateId){
+  templateId = templateId || 'classic';
+  const inner = buildPrintHTML(doc, templateId);
+  const css = SHARED_DOC_CSS + (TPL_CSS[templateId]||TPL_CSS.classic) + POPUP_EXTRA_CSS;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>${escapeHtml(doc.docNumber||'Document')}</title>
+<style>${css}</style></head><body>
+<div class="tb"><button onclick="window.print()">Print / Save as PDF</button></div>
+${inner}
+</body></html>`;
+}
+
+let currentPreviewDoc = null;
+let currentPreviewTemplate = 'classic';
+
+/* Shows the document on-screen in a modal — fixes "can't view" and also gives
+   html2canvas a fully visible element to capture (much more reliable than an
+   off-screen node, especially in mobile browsers / in-app webviews). */
+function showPreview(doc, templateId){
+  currentPreviewDoc = doc;
+  currentPreviewTemplate = templateId || (settings && settings.template) || 'classic';
+  const sel = document.getElementById('previewTemplateSelect');
+  if(sel.options.length === 0){
+    sel.innerHTML = TEMPLATES.map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  }
+  sel.value = currentPreviewTemplate;
+  renderPreviewContent();
+  document.getElementById('previewModalBackdrop').classList.add('open');
+}
+function renderPreviewContent(){
+  document.getElementById('previewContainer').innerHTML = buildPrintHTML(currentPreviewDoc, currentPreviewTemplate);
+  document.getElementById('pdfStatus').textContent = '';
+  try{
+    const blob = new Blob([standaloneHtml(currentPreviewDoc, currentPreviewTemplate)], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    document.getElementById('openNewTabLink').href = url;
+  }catch(e){ /* Blob/URL not available — the in-modal preview still works */ }
+}
+function onPreviewTemplateChange(){
+  currentPreviewTemplate = document.getElementById('previewTemplateSelect').value;
+  renderPreviewContent();
+}
+function closePreviewModal(){
+  document.getElementById('previewModalBackdrop').classList.remove('open');
+}
+function prepareExportMount(){
+  const mount = document.getElementById('exportMount');
+  if(!currentPreviewDoc){
+    mount.innerHTML = '';
+    return null;
+  }
+  mount.innerHTML = buildPrintHTML(currentPreviewDoc, currentPreviewTemplate);
+  const wrap = mount.firstElementChild;
+  if(wrap) wrap.style.width = '794px';
+  return wrap;
+}
+function clearExportMount(){
+  const mount = document.getElementById('exportMount');
+  if(mount && !mount.dataset.busy){
+    mount.innerHTML = '';
+    document.body.classList.remove('is-exporting-print');
+  }
+}
+function printFromPreview(){
+  // Fill the unscaled export mount first, then print immediately so the
+  // browser still treats this click as a user gesture.
+  if(!prepareExportMount()){
+    const status = document.getElementById('pdfStatus');
+    if(status) status.textContent = 'Nothing to print yet.';
+    return;
+  }
+  document.body.classList.add('is-exporting-print');
+  const done = () => {
+    window.removeEventListener('afterprint', done);
+    clearExportMount();
+  };
+  window.addEventListener('afterprint', done);
+  window.print();
+}
+window.addEventListener('beforeprint', () => {
+  const previewOpen = document.getElementById('previewModalBackdrop').classList.contains('open');
+  if(previewOpen && currentPreviewDoc && !document.getElementById('exportMount').firstElementChild){
+    prepareExportMount();
+    document.body.classList.add('is-exporting-print');
+  }
+});
+async function capturePageCanvas(pageEl){
+  return html2canvas(pageEl, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#ffffff',
+    width: 794,
+    height: 1123,
+    windowWidth: 794,
+    scrollX: 0,
+    scrollY: 0,
+    logging: false
+  });
+}
+async function downloadPdfFromPreview(){
+  const status = document.getElementById('pdfStatus');
+  const mount = document.getElementById('exportMount');
+  if(!currentPreviewDoc){ status.textContent = 'Nothing to export yet.'; return; }
+  if(typeof html2canvas === 'undefined' || !window.jspdf){
+    status.textContent = "PDF libraries failed to load. Use \"Open in new tab\" then your browser's Print → Save as PDF instead.";
+    return;
+  }
+  status.textContent = 'Preparing PDF…';
+  mount.dataset.busy = '1';
+  mount.style.left = '0px';
+  mount.style.top = '0px';
+  const el = prepareExportMount();
+  if(!el){
+    delete mount.dataset.busy;
+    mount.style.left = '';
+    mount.style.top = '';
+    status.textContent = 'Nothing to export yet.';
+    return;
+  }
+  /* Build filename as PartyName-InvoiceNumber.pdf */
+  const party = docParty(currentPreviewDoc);
+  const partyName = (party.name || '').trim().replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_') || 'Party';
+  const docNum = (currentPreviewDoc.docNumber || '').trim().replace(/[^a-zA-Z0-9_\-]/g, '') || 'document';
+  const filename = `${partyName}-${docNum}.pdf`;
+
+  const capture = document.createElement('div');
+  capture.className = el.className;
+  capture.style.cssText = 'position:fixed;left:0;top:0;width:794px;background:#fff;z-index:0;pointer-events:none;';
+  document.body.appendChild(capture);
+  try{
+    if(document.fonts && document.fonts.ready){
+      await document.fonts.ready.catch(()=>{});
+    }
+    const pages = [...el.querySelectorAll('.doc-page')];
+    if(pages.length === 0) throw new Error('No pages to export');
+    const canvases = [];
+    for(let i = 0; i < pages.length; i++){
+      status.textContent = `Preparing PDF… page ${i+1} of ${pages.length}`;
+      capture.innerHTML = '';
+      const clone = pages[i].cloneNode(true);
+      clone.style.margin = '0';
+      clone.style.transform = 'none';
+      clone.style.width = '794px';
+      clone.style.height = '1123px';
+      capture.appendChild(clone);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      canvases.push(await capturePageCanvas(clone));
+    }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const w = 210;  // A4 width  in mm
+    const h = 297;  // A4 height in mm
+    for(let i = 0; i < canvases.length; i++){
+      if(i > 0) pdf.addPage();
+      pdf.addImage(canvases[i].toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, w, h);
+    }
+    pdf.save(filename);
+    status.textContent = `PDF downloaded as "${filename}". Check your Downloads folder.`;
+  }catch(err){
+    console.error('PDF generation failed', err);
+    status.textContent = 'Could not generate the PDF. Error: ' + err.message;
+  }finally{
+    capture.remove();
+    delete mount.dataset.busy;
+    mount.style.left = '';
+    mount.style.top = '';
+    clearExportMount();
+  }
+}
+function doPreviewPrint(){
+  const doc = collectDocFromForm();
+  if(!doc.partyId){ showToast('Select a party first'); return; }
+  showPreview(doc);
+}
+function doDownloadPdf(){
+  const doc = collectDocFromForm();
+  if(!doc.partyId){ showToast('Select a party first'); return; }
+  showPreview(doc);
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+async function init(){
+  try{
+    await loadAll();
+  }catch(err){
+    document.getElementById('app').innerHTML = `<div style="padding:60px;text-align:center;font-family:sans-serif;max-width:520px;margin:0 auto;">
+      <h2 style="color:#B3261E;">Can't reach the server</h2>
+      <p style="color:#555;">${escapeHtml(err.message || 'Unknown error')}</p>
+      <p style="color:#777;font-size:13px;">Make sure the backend is running (<code>npm start</code> in the project folder) and MongoDB is reachable, then reload this page.</p>
+    </div>`;
+    return;
+  }
+  document.getElementById('brandName').textContent = settings.companyName || 'Bellavo Billing';
+  populatePartyDropdown();
+  clearForm(true);
+  renderDashboard();
+
+  // Close search dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.prod-search-wrap')){
+      document.querySelectorAll('.prod-dropdown.open').forEach(dd => {
+        dd.classList.remove('open');
+        dd.innerHTML = '';
+      });
+    }
+  });
+}
+init();
+</script>
+</body>
+</html>
