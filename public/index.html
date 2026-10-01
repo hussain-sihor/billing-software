@@ -131,8 +131,10 @@ table.items td.rm{text-align:center;width:34px;}
 .slno-col{width:36px;text-align:center;color:var(--muted);}
 
 /* ---- product search-in-row ---- */
-.prod-search-wrap{position:relative;width:100%;}
-.prod-search-input{width:100%;box-sizing:border-box;border:1px solid transparent;background:transparent;padding:5px 4px;font-size:inherit;font-family:inherit;color:inherit;}
+.prod-search-wrap{position:relative;width:100%;display:flex;align-items:center;gap:4px;}
+.prod-search-input{flex:1;min-width:0;box-sizing:border-box;border:1px solid transparent;background:transparent;padding:5px 4px;font-size:inherit;font-family:inherit;color:inherit;}
+.save-prod-btn{flex:0 0 auto;align-items:center;gap:3px;border:1px solid var(--accent);background:#E4F3EE;color:var(--accent-dark);font-size:10.5px;font-weight:700;padding:3px 7px;border-radius:5px;white-space:nowrap;line-height:1.2;}
+.save-prod-btn:hover{background:var(--accent);color:#fff;}
 .prod-search-input:focus{outline:none;background:#fff;border-color:var(--accent);border-radius:4px;}
 .prod-search-input.has-value{font-weight:600;}
 .prod-dropdown{position:absolute;top:100%;left:0;min-width:320px;width:100%;max-width:440px;background:#fff;border:1px solid #CBD5E1;border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.15);z-index:9999;max-height:300px;overflow-y:auto;display:none;}
@@ -564,6 +566,10 @@ let editingDocId = null;
 let editingProductId = null;
 let editingPartyId = null;
 let currentDocType = 'invoice';
+// Type of the document as it was originally loaded for editing (null for a fresh form).
+// Used to detect a quotation→bill (or bill→quotation) conversion so we save a NEW
+// document instead of overwriting the original.
+let editingDocType = null;
 
 /* =========================================================
    API HELPERS (talks to the Express + MongoDB backend)
@@ -729,6 +735,14 @@ function setDocType(type){
   document.getElementById('docNoLabel').textContent = type==='invoice' ? 'Invoice No.' : 'Quotation No.';
   if(!editingDocId){
     document.getElementById('f_docNumber').value = previewDocNumber(type);
+  } else if(editingDocType && type !== editingDocType){
+    // Converting an existing document to the other type — it'll be saved as a new
+    // document, so give it a fresh number from the correct series.
+    document.getElementById('f_docNumber').value = previewDocNumber(type);
+  } else if(editingDocType && type === editingDocType){
+    // Switched back to the original type — restore the original number.
+    const orig = documents.find(d=>d._id===editingDocId);
+    if(orig) document.getElementById('f_docNumber').value = orig.docNumber;
   }
 }
 function previewDocNumber(type){
@@ -791,6 +805,11 @@ function renderItemsTable(){
             onblur="onInputBlur(this); onProdSearchBlur(${idx});"
             onkeydown="onItemInputKeydown(event, ${idx}, 'prod')"
           >
+          <button type="button" class="save-prod-btn" id="save-prod-${idx}"
+            title="Save this product for reuse"
+            style="display:${rowProductIsSaveable(it) ? 'inline-flex' : 'none'};"
+            onmousedown="event.preventDefault()"
+            onclick="saveRowProduct(${idx})">&#128190; Save</button>
           <div class="prod-dropdown" id="prod-dd-${idx}"></div>
         </div>
         <input placeholder="Description" data-row="${idx}" data-field="desc" value="${escapeHtml(it.description||'')}" oninput="itemRows[${idx}].description=this.value" onfocus="onInputFocus(this)" onmouseup="onInputMouseUp(this, event)" onblur="onInputBlur(this)" onkeydown="onItemInputKeydown(event, ${idx}, 'desc')">
@@ -806,6 +825,48 @@ function renderItemsTable(){
   }).join('');
   recalcTotals();
 }
+// True when the row has a typed-in product that isn't linked to a saved one yet.
+function rowProductIsSaveable(it){
+  if(it.productId) return false;
+  const name = (it._searchText !== undefined ? it._searchText : (it.description||'')).trim();
+  if(!name) return false;
+  // Already an exact (case-insensitive) match to a saved product? then no need to save.
+  return !products.some(p => normStr(p.name) === normStr(name));
+}
+
+// Save the product typed into a bill/quotation row so it's reusable next time.
+async function saveRowProduct(idx){
+  const it = itemRows[idx];
+  const name = (it._searchText !== undefined ? it._searchText : (it.description||'')).trim();
+  if(!name){ showToast('Type a product name first'); return; }
+  const existing = products.find(p => normStr(p.name) === normStr(name));
+  if(existing){
+    onProductPick(idx, existing._id);
+    showToast('Product already saved');
+    return;
+  }
+  const data = {
+    name,
+    description: (it.description||'').trim(),
+    unit: (it.unit||'pcs').trim() || 'pcs',
+    rate: parseFloat(it.rate) || 0,
+    hsn: (it.hsn||'').trim()
+  };
+  try{
+    const created = await apiPost('/products', data);
+    products = await apiGet('/products');
+    const match = (created && created._id)
+      ? created._id
+      : (products.find(p => normStr(p.name) === normStr(name)) || {})._id;
+    if(match) itemRows[idx].productId = match;
+    renderItemsTable();
+    renderProductsTab();
+    showToast('Product saved for reuse');
+  }catch(err){
+    showToast(err.message || 'Could not save product');
+  }
+}
+
 function onProductPick(idx, productId){
   const it = itemRows[idx];
   it.productId = productId;
@@ -926,6 +987,8 @@ function onProdSearchInput(idx, inp){
       descInput.value = q;
     }
   }
+  const saveBtn = document.getElementById('save-prod-'+idx);
+  if(saveBtn) saveBtn.style.display = rowProductIsSaveable(itemRows[idx]) ? 'inline-flex' : 'none';
   renderProdDropdown(idx, q);
 }
 
@@ -1204,6 +1267,7 @@ function recalcTotals(){
 
 function clearForm(resetType){
   editingDocId = null;
+  editingDocType = null;
   document.getElementById('f_docNumber').value = previewDocNumber(currentDocType);
   document.getElementById('f_date').value = todayISO();
   document.getElementById('f_deliveryNote').value = '';
@@ -1243,9 +1307,14 @@ async function saveDocument(){
   if(!doc.partyId){ showToast('Please select a party'); return; }
   if(doc.items.length===0){ showToast('Please add at least one item'); return; }
 
+  // If the user opened an existing document and changed its type (e.g. a saved
+  // quotation converted to a bill), save it as a brand-new document so the
+  // original stays untouched — you end up with both the quotation and the bill.
+  const isConversion = editingDocId && editingDocType && doc.type !== editingDocType;
+
   try{
     let saved;
-    if(editingDocId){
+    if(editingDocId && !isConversion){
       saved = await apiPut('/documents/'+editingDocId, doc);
     } else {
       saved = await apiPost('/documents', doc);
@@ -1253,7 +1322,10 @@ async function saveDocument(){
     // Re-sync from the server so counters/snapshots reflect what's really stored.
     [documents, settings] = await Promise.all([apiGet('/documents'), apiGet('/settings')]);
     editingDocId = saved._id;
-    showToast(doc.type==='invoice' ? 'Bill saved' : 'Quotation saved');
+    editingDocType = saved.type;
+    showToast(isConversion
+      ? (doc.type==='invoice' ? 'Converted to a new bill' : 'Converted to a new quotation')
+      : (doc.type==='invoice' ? 'Bill saved' : 'Quotation saved'));
     switchTab('saved');
   }catch(err){
     showToast(err.message || 'Could not save the document');
@@ -1264,6 +1336,7 @@ function editDocument(id){
   const doc = documents.find(d=>d._id===id);
   if(!doc) return;
   editingDocId = doc._id;
+  editingDocType = doc.type;
   currentDocType = doc.type;
   switchTab('newdoc');
   setDocType(doc.type);
@@ -1629,28 +1702,36 @@ gst: `
 .doc-tpl-gst .f-title{font-weight:700;font-size:8px;text-transform:uppercase;margin-bottom:2px;}
 `,
 modern: `
-.doc-tpl-modern .doc-page{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#20303f;}
+/* Full-bleed layout: drop the page padding so the coloured header band and the
+   tinted section backgrounds reach the inner edge of the page border — the
+   previous 24/28px page padding left an awkward white gutter around the teal
+   header and misaligned the meta / footer dividers. Horizontal breathing room
+   is now applied per-section instead. */
+.doc-tpl-modern .doc-page{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#20303f;padding:0;}
 .doc-tpl-modern .doc-border{border:1px solid #D7DEE8;}
-.doc-tpl-modern .doc-head{display:flex;justify-content:space-between;align-items:center;background:#0E7C6B;color:#fff;padding:12px 16px;}
+.doc-tpl-modern .doc-head{display:flex;justify-content:space-between;align-items:center;background:#0E7C6B;color:#fff;padding:16px 28px;}
 .doc-tpl-modern .co-name{font-size:18px;font-weight:700;letter-spacing:.3px;}
 .doc-tpl-modern .co-sub{font-size:10px;margin-top:2px;line-height:1.35;opacity:.92;}
 .doc-tpl-modern .doc-type{font-size:11px;font-weight:700;letter-spacing:2px;border:1.4px solid rgba(255,255,255,.7);padding:5px 14px;border-radius:20px;text-transform:uppercase;}
 .doc-tpl-modern .doc-meta{display:flex;border-bottom:1px solid #E2E8F0;font-size:10.5px;}
-.doc-tpl-modern .doc-meta .half{flex:1;padding:9px 16px;}
+.doc-tpl-modern .doc-meta .half{flex:1;padding:12px 28px;}
 .doc-tpl-modern .doc-meta .half:first-child{border-right:1px solid #E2E8F0;}
 .doc-tpl-modern .m-title{font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:#0E7C6B;margin-bottom:3px;}
 .doc-tpl-modern .m-row{display:flex;justify-content:space-between;margin-bottom:2px;color:#425466;}
 .doc-tpl-modern .m-row span:first-child{color:#8895A7;}
-.doc-tpl-modern table.pitems{font-size:10.5px;}
-.doc-tpl-modern table.pitems th{border:none;border-bottom:2px solid #0E7C6B;background:#F4FAF8;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#0E7C6B;}
-.doc-tpl-modern table.pitems td{border:none;border-bottom:1px solid #EEF1F5;padding:4px 6px;}
+/* Items + everything below the meta band gets the horizontal gutter back. */
+.doc-tpl-modern table.pitems{font-size:10.5px;margin:14px 28px 0;width:calc(100% - 56px);}
+.doc-tpl-modern table.pitems th{border:none;border-bottom:2px solid #0E7C6B;background:#F4FAF8;padding:6px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#0E7C6B;}
+.doc-tpl-modern table.pitems td{border:none;border-bottom:1px solid #EEF1F5;padding:5px 6px;}
+.doc-tpl-modern .doc-bottom{padding:0 28px 20px;}
 .doc-tpl-modern .ptot-row td{border:none;padding:3px 8px;font-size:10.5px;}
 .doc-tpl-modern .ptot-row.grand td{font-weight:700;font-size:12px;color:#0E7C6B;border-top:2px solid #0E7C6B;padding-top:6px;}
-.doc-tpl-modern .words-row{border:none;background:#F4FAF8;padding:6px 10px;font-size:10.5px;border-radius:6px;margin-top:2px;}
+.doc-tpl-modern .words-row{border:none;background:#F4FAF8;padding:8px 12px;font-size:10.5px;border-radius:6px;margin-top:6px;}
 .doc-tpl-modern .words-row b{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#0E7C6B;}
-.doc-tpl-modern .foot-grid{display:flex;border:none;border-top:1px solid #E2E8F0;font-size:10px;margin-top:6px;padding-top:6px;}
+.doc-tpl-modern .foot-grid{display:flex;border:none;border-top:1px solid #E2E8F0;font-size:10px;margin-top:12px;padding-top:10px;}
 .doc-tpl-modern .foot-grid .half{flex:1;padding:5px 14px;}
-.doc-tpl-modern .foot-grid .half:first-child{border-right:1px solid #E2E8F0;}
+.doc-tpl-modern .foot-grid .half:first-child{border-right:1px solid #E2E8F0;padding-left:0;}
+.doc-tpl-modern .foot-grid .half:last-child{padding-right:0;}
 .doc-tpl-modern .f-title{font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;color:#0E7C6B;}
 `,
 compact: `
