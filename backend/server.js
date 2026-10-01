@@ -26,11 +26,13 @@ app.use('/api/settings', settingsRouter);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
-// Serve the billing app frontend.
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve the built React client (frontend/dist). Build it with `npm run build`.
+const CLIENT_DIST = path.join(__dirname, '..', 'frontend', 'dist');
+
+app.use(express.static(CLIENT_DIST));
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(CLIENT_DIST, 'index.html'));
 });
 
 // Central error handler — always returns JSON, never a stack-trace page.

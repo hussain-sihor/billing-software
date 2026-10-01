@@ -12,9 +12,19 @@ bellavo-backend/
   config/db.js        MongoDB connection
   models/              Product, Party, Document (invoice/quotation), Settings
   routes/               REST API for each of the above
-  public/index.html   The billing app itself (frontend)
+  client/              React + Tailwind frontend (Vite)
+    src/
+      pages/              Dashboard, NewDocument, SavedDocuments, Products, Parties, Settings
+      components/         Sidebar, modals, items editor, product search, preview, UI primitives
+      templates/          The 6 document templates + pagination + print/PDF CSS
+      lib/                api, store (zustand), formatting, calc, product search
+    dist/              Production build output (served by Express)
   .env                 Your MongoDB connection string (already filled in)
 ```
+
+The frontend is a React + Tailwind app (Vite) under `client/`. Express serves
+the production build from `client/dist`, so you must run `npm run build`
+before `npm start`.
 
 ## Before you run it — rotate your database password
 
@@ -62,9 +72,13 @@ the description). Every other template simply ignores it.
 
 You'll need [Node.js](https://nodejs.org) 18 or newer installed.
 
+### Production (one server serves everything)
+
 ```bash
 cd bellavo-backend
-npm install      # only needed once
+npm install          # backend deps, only needed once
+npm run client:install   # client deps, only needed once
+npm run build        # builds the React app into client/dist
 npm start
 ```
 
@@ -75,8 +89,24 @@ You should see:
 [server] Bellavo Billing running at http://localhost:5000
 ```
 
-Open **http://localhost:5000** in your browser — that's the app, and every
-save now goes straight into your MongoDB Atlas cluster.
+Open **http://localhost:5000** — Express serves the React app and the API
+from the same origin, and every save goes straight into your MongoDB Atlas
+cluster. Rerun `npm run build` whenever you change anything under `client/`.
+
+### Development (hot-reloading frontend)
+
+Run the backend and the Vite dev server in two terminals:
+
+```bash
+# terminal 1 — API on :5000
+npm start
+
+# terminal 2 — React dev server on :5173 (proxies /api to :5000)
+npm run client:dev
+```
+
+Then open **http://localhost:5173**. Edits to the React code hot-reload
+instantly; API calls are proxied to the backend on 5000.
 
 Go to **Settings** first and fill in your company name, GSTIN, bank
 details, and jurisdiction line — these appear on every bill and quotation.

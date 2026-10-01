@@ -5,7 +5,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "client:install": "npm --prefix ../frontend install",
+    "client:dev": "npm --prefix ../frontend run dev",
+    "client:build": "npm --prefix ../frontend run build",
+    "build": "npm --prefix ../frontend run build"
   },
   "keywords": [],
   "author": "",

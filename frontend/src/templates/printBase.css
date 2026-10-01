@@ -1,0 +1,65 @@
+/* ============================================================================
+   Print/export geometry only — page sizing, color fidelity, and the toggle
+   that shows only the off-screen export mount during window.print(). Visual
+   styling of documents lives in templates.css; app chrome uses Tailwind.
+   ========================================================================= */
+
+/* Off-screen A4 mount used for html2canvas capture and browser print. Must not
+   sit inside a transformed/overflow:auto ancestor or html2canvas draws blank. */
+#exportMount {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 794px;
+  background: #fff;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body.is-exporting-print > *:not(#exportMount) {
+    display: none !important;
+  }
+  body.is-exporting-print #exportMount {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 210mm !important;
+    z-index: auto !important;
+    pointer-events: auto !important;
+    background: #fff !important;
+  }
+  body.is-exporting-print #exportMount .doc-sheet {
+    gap: 0 !important;
+    width: 210mm !important;
+  }
+  body.is-exporting-print #exportMount .doc-page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    page-break-after: always;
+    break-after: page;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body.is-exporting-print #exportMount .doc-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+}
