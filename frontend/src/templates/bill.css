@@ -209,7 +209,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  border-bottom: 1px solid #000;
+  /* border-bottom: 1px solid #000; */
   padding: 3px 7px;
 }
 .doc-tpl-bill .words-row .small {
@@ -232,8 +232,10 @@
 .doc-tpl-bill table.taxsummary th,
 .doc-tpl-bill table.taxsummary td {
   border: 1px solid #000;
+  border-left: none;
   padding: 2px 5px;
   text-align: center;
+  align-items: center;
 }
 .doc-tpl-bill table.taxsummary th {
   font-weight: 400;
@@ -249,7 +251,7 @@
   text-align: center;
 }
 .doc-tpl-bill table.taxsummary tr.sum-total td {
-  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
 }
 
 .doc-tpl-bill .taxwords-row {

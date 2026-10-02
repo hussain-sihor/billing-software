@@ -41,6 +41,18 @@ const DocumentSchema = new Schema(
     deliveryNote: { type: String, trim: true, default: '' },
     terms: { type: String, trim: true, default: '' },
 
+    // Extra Tally-style invoice header fields (all optional). Rendered on the
+    // bill template; shown as empty cells when not filled.
+    modeOfPayment: { type: String, trim: true, default: '' },
+    refNoDate: { type: String, trim: true, default: '' },
+    otherReferences: { type: String, trim: true, default: '' },
+    buyerOrderNo: { type: String, trim: true, default: '' },
+    buyerOrderDate: { type: String, trim: true, default: '' },
+    dispatchDocNo: { type: String, trim: true, default: '' },
+    deliveryNoteDate: { type: String, trim: true, default: '' },
+    dispatchedThrough: { type: String, trim: true, default: '' },
+    destination: { type: String, trim: true, default: '' },
+
     items: { type: [ItemSchema], required: true, validate: v => Array.isArray(v) && v.length > 0 },
 
     subtotal: { type: Number, required: true, min: 0 },

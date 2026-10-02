@@ -29,6 +29,16 @@ export default function NewDocument() {
   const [date, setDate] = useState(todayISO());
   const [deliveryNote, setDeliveryNote] = useState('');
   const [terms, setTerms] = useState('');
+  // Extra Tally-style invoice header fields (all optional).
+  const [modeOfPayment, setModeOfPayment] = useState('');
+  const [refNoDate, setRefNoDate] = useState('');
+  const [otherReferences, setOtherReferences] = useState('');
+  const [buyerOrderNo, setBuyerOrderNo] = useState('');
+  const [buyerOrderDate, setBuyerOrderDate] = useState('');
+  const [dispatchDocNo, setDispatchDocNo] = useState('');
+  const [deliveryNoteDate, setDeliveryNoteDate] = useState('');
+  const [dispatchedThrough, setDispatchedThrough] = useState('');
+  const [destination, setDestination] = useState('');
   const [partyId, setPartyId] = useState('');
   const [rows, setRows] = useState([blankItem()]);
   const [gstMode, setGstMode] = useState('split');
@@ -62,6 +72,15 @@ export default function NewDocument() {
     setDate(todayISO());
     setDeliveryNote('');
     setTerms('');
+    setModeOfPayment('');
+    setRefNoDate('');
+    setOtherReferences('');
+    setBuyerOrderNo('');
+    setBuyerOrderDate('');
+    setDispatchDocNo('');
+    setDeliveryNoteDate('');
+    setDispatchedThrough('');
+    setDestination('');
     setPartyId('');
     setRows([blankItem()]);
     setGstMode('split');
@@ -77,6 +96,15 @@ export default function NewDocument() {
     setDate(doc.date);
     setDeliveryNote(doc.deliveryNote || '');
     setTerms(doc.terms || '');
+    setModeOfPayment(doc.modeOfPayment || '');
+    setRefNoDate(doc.refNoDate || '');
+    setOtherReferences(doc.otherReferences || '');
+    setBuyerOrderNo(doc.buyerOrderNo || '');
+    setBuyerOrderDate(doc.buyerOrderDate || '');
+    setDispatchDocNo(doc.dispatchDocNo || '');
+    setDeliveryNoteDate(doc.deliveryNoteDate || '');
+    setDispatchedThrough(doc.dispatchedThrough || '');
+    setDestination(doc.destination || '');
     setPartyId(doc.partyId || '');
     setRows(
       doc.items.length
@@ -127,6 +155,15 @@ export default function NewDocument() {
       date: date || todayISO(),
       deliveryNote: deliveryNote.trim(),
       terms: terms.trim(),
+      modeOfPayment: modeOfPayment.trim(),
+      refNoDate: refNoDate.trim(),
+      otherReferences: otherReferences.trim(),
+      buyerOrderNo: buyerOrderNo.trim(),
+      buyerOrderDate: buyerOrderDate.trim(),
+      dispatchDocNo: dispatchDocNo.trim(),
+      deliveryNoteDate: deliveryNoteDate.trim(),
+      dispatchedThrough: dispatchedThrough.trim(),
+      destination: destination.trim(),
       partyId,
       items: rows
         .filter((it) => (it.description || it.productId))
@@ -249,7 +286,7 @@ export default function NewDocument() {
               placeholder="Optional"
             />
           </Field>
-          <Field label="Terms of payment / delivery">
+          <Field label="Terms of delivery">
             <Input
               value={terms}
               onChange={(e) => setTerms(e.target.value)}
@@ -258,6 +295,40 @@ export default function NewDocument() {
           </Field>
         </div>
       </Card>
+
+      {docType === 'invoice' && (
+        <Card title="Invoice references (optional)">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <Field label="Mode/Terms of Payment">
+              <Input value={modeOfPayment} onChange={(e) => setModeOfPayment(e.target.value)} placeholder="Optional" />
+            </Field>
+            <Field label="Reference No. & Date">
+              <Input value={refNoDate} onChange={(e) => setRefNoDate(e.target.value)} placeholder="Optional" />
+            </Field>
+            <Field label="Other References">
+              <Input value={otherReferences} onChange={(e) => setOtherReferences(e.target.value)} placeholder="Optional" />
+            </Field>
+            <Field label="Buyer's Order No.">
+              <Input value={buyerOrderNo} onChange={(e) => setBuyerOrderNo(e.target.value)} placeholder="Optional" />
+            </Field>
+            <Field label="Buyer's Order Date">
+              <Input value={buyerOrderDate} onChange={(e) => setBuyerOrderDate(e.target.value)} placeholder="Optional" />
+            </Field>
+            <Field label="Dispatch Doc No.">
+              <Input value={dispatchDocNo} onChange={(e) => setDispatchDocNo(e.target.value)} placeholder="Optional" />
+            </Field>
+            <Field label="Delivery Note Date">
+              <Input value={deliveryNoteDate} onChange={(e) => setDeliveryNoteDate(e.target.value)} placeholder="Optional" />
+            </Field>
+            <Field label="Dispatched through">
+              <Input value={dispatchedThrough} onChange={(e) => setDispatchedThrough(e.target.value)} placeholder="Optional" />
+            </Field>
+            <Field label="Destination">
+              <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Optional" />
+            </Field>
+          </div>
+        </Card>
+      )}
 
       <Card title="Bill to (party)">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">

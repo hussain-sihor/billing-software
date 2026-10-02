@@ -106,15 +106,15 @@ function BillHeader({ doc, parties, settings }) {
         <MetaCell label="Invoice No:" value={doc.docNumber} strong />
         <MetaCell label="Dated:" value={fmtDate(doc.date)} strong />
         <MetaCell label="Delivery Note:" value={doc.deliveryNote} />
-        <MetaCell label="Mode/Terms of Payment:" value="" />
-        <MetaCell label="Reference No & Date:" value="" />
-        <MetaCell label="Other References:" value="" />
-        <MetaCell label="Buyer's Order No:" value="" />
-        <MetaCell label="Dated:" value="" />
-        <MetaCell label="Dispatch Doc No:" value="" />
-        <MetaCell label="Delivery Note Date:" value="" />
-        <MetaCell label="Dispatched through:" value="" />
-        <MetaCell label="Destination:" value="" />
+        <MetaCell label="Mode/Terms of Payment:" value={doc.modeOfPayment} />
+        <MetaCell label="Reference No & Date:" value={doc.refNoDate} />
+        <MetaCell label="Other References:" value={doc.otherReferences} />
+        <MetaCell label="Buyer's Order No:" value={doc.buyerOrderNo} />
+        <MetaCell label="Dated:" value={doc.buyerOrderDate} />
+        <MetaCell label="Dispatch Doc No:" value={doc.dispatchDocNo} />
+        <MetaCell label="Delivery Note Date:" value={doc.deliveryNoteDate} />
+        <MetaCell label="Dispatched through:" value={doc.dispatchedThrough} />
+        <MetaCell label="Destination:" value={doc.destination} />
         <MetaCell label="Terms of Delivery:" value={doc.terms} span2 />
       </div>
     </div>
@@ -219,7 +219,7 @@ function BillFooter({ doc, co }) {
         <td className="r">{cRate ? numOnly(cAmt) : '-'}</td>
         <td className="c">{sRate ? sRate.toFixed(0) + '%' : '-'}</td>
         <td className="r">{sRate ? numOnly(sAmt) : '-'}</td>
-        <td className="r">{numOnly(cAmt + sAmt)}</td>
+        <td className="r" style={{borderRight:"none"}}>{numOnly(cAmt + sAmt)}</td>
       </tr>
     );
   });
@@ -241,7 +241,7 @@ function BillFooter({ doc, co }) {
             <th rowSpan={2}>Taxable<br />Value</th>
             <th colSpan={2}>CGST</th>
             <th colSpan={2}>SGST/UTGST</th>
-            <th rowSpan={2}>Total<br />Tax Amount</th>
+            <th rowSpan={2} style={{borderRight:"none"}}>Total<br />Tax Amount</th>
           </tr>
           <tr>
             <th>Rate</th><th>Amount</th><th>Rate</th><th>Amount</th>
@@ -256,7 +256,7 @@ function BillFooter({ doc, co }) {
             <td className="r"><b>{numOnly(doc.cgst || 0)}</b></td>
             <td />
             <td className="r"><b>{numOnly(doc.sgst || 0)}</b></td>
-            <td className="r"><b>{numOnly(totalTax)}</b></td>
+            <td className="r" style={{borderRight:"none"}}><b>{numOnly(totalTax)}</b></td>
           </tr>
         </tbody>
       </table>
