@@ -5,6 +5,30 @@ import { registry } from './registry';
 
 const PAGE_PX = 1123;
 
+// The bill (Tally GST invoice) template paginates by a fixed number of item
+// rows per page rather than by DOM measurement: its layout has a fixed-height
+// items table so the header/totals/footer always stay on the page. Rows 1..N
+// land on page 1, N+1..2N on page 2, and so on; totals + tax summary render
+// only on the last page and sum every item in the document.
+const BILL_ROWS_PER_PAGE = 38;
+
+// Quotation templates (classic/modern/compact/bold/ledger — all GenericPage)
+// use the same deterministic fixed-row pagination. The cap is conservative so
+// it holds for the tallest theme (bold/modern) where rows and the totals/bank
+// footer take the most space; totals render only on the last page and already
+// sum the whole document.
+const QUOTATION_ROWS_PER_PAGE = 24;
+const QUOTATION_TEMPLATES = ['classic', 'modern', 'compact', 'bold', 'ledger'];
+
+function chunkByRowCount(items, perPage) {
+  if (items.length === 0) return [[]];
+  const chunks = [];
+  for (let i = 0; i < items.length; i += perPage) {
+    chunks.push(items.slice(i, i + perPage));
+  }
+  return chunks;
+}
+
 // Measure whether a candidate page (given template + props) fits within one A4
 // page. Renders synchronously into an off-screen host and reads scrollHeight.
 function makeFits(templateId, doc, parties, settings) {
@@ -54,6 +78,16 @@ function makeFits(templateId, doc, parties, settings) {
 export function chunkItemsForPages(templateId, doc, parties, settings) {
   const items = Array.isArray(doc.items) ? doc.items : [];
   if (items.length === 0) return [[]];
+
+  // Bill + quotation templates use deterministic fixed-row pagination, no
+  // DOM measurement needed. (GST Detailed still measures — its tax summary
+  // makes a fixed row count unreliable.)
+  if (templateId === 'bill') {
+    return chunkByRowCount(items, BILL_ROWS_PER_PAGE);
+  }
+  if (QUOTATION_TEMPLATES.includes(templateId)) {
+    return chunkByRowCount(items, QUOTATION_ROWS_PER_PAGE);
+  }
 
   const { fits, cleanup } = makeFits(templateId, doc, parties, settings);
   try {

@@ -1,0 +1,311 @@
+/* ============================================================================
+   Bill (GST Tax Invoice) — Tally-style template.
+
+   Dedicated stylesheet scoped via .doc-tpl-bill. Reproduces the classic Tally
+   tax-invoice layout from the provided sample: outer boxed border, split
+   seller/buyer header beside an invoice-meta grid, a tall item table that
+   fills the page, tax/total rows, amount-in-words, HSN tax summary and the
+   bank/declaration/signature footer. Plain CSS for pixel-exact A4 output.
+   ========================================================================= */
+
+.doc-tpl-bill .doc-page {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  color: #000;
+  padding: 16px 18px;
+}
+
+/* ---- Title ---- */
+.doc-tpl-bill .bill-title {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  position: relative;
+  padding-bottom: 6px;
+}
+.doc-tpl-bill .bill-title-main {
+  font-size: 13px;
+  font-weight: 700;
+}
+.doc-tpl-bill .bill-title-sub {
+  position: absolute;
+  right: 0;
+  bottom: 6px;
+  font-size: 9px;
+  font-style: italic;
+}
+
+/* ---- Header grid (seller/buyer | meta) ---- */
+.doc-tpl-bill .bill-head {
+  display: flex;
+  border: 1px solid #000;
+  border-bottom: 1px solid black;
+    /* border: 1px solid red; */
+    /* border-bottom: 2px solid black; */
+}
+.doc-tpl-bill .bill-head-left {
+  width: 52%;
+  border-right: 1px solid #000;
+  border-bottom: 1px solid black;
+  display: flex;
+  flex-direction: column;
+}
+.doc-tpl-bill .seller {
+  padding: 5px 7px;
+}
+.doc-tpl-bill .buyer {
+  padding: 5px 7px;
+  border-top: 1px solid #000;
+  flex: 1;
+}
+.doc-tpl-bill .co-name {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.doc-tpl-bill .co-sub {
+  font-size: 9px;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.doc-tpl-bill .co-sub-buyer {
+  font-size: 11px;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.doc-tpl-bill .buyer .label {
+  font-size: 9px;
+  margin-bottom: 2px;
+}
+.doc-tpl-bill .party-name {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.doc-tpl-bill .kv {
+  display: flex;
+}
+.doc-tpl-bill .kv span:first-child {
+  width: 72px;
+  flex: none;
+}
+
+/* right meta grid: 2 columns of bordered cells */
+.doc-tpl-bill .bill-head-right {
+  width: 48%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: min-content;
+}
+.doc-tpl-bill .meta-cell {
+  border-bottom: 1px solid #000;
+  border-right: 1px solid #000;
+  padding: 3px 6px;
+  min-height: 26px;
+}
+.doc-tpl-bill .bill-head-right .meta-cell:nth-child(2n) {
+  border-right: none;
+}
+.doc-tpl-bill .meta-cell.span2 {
+  grid-column: 1 / -1;
+  border-right: none;
+}
+.doc-tpl-bill .meta-label {
+  font-size: 8.5px;
+  line-height: 1.2;
+}
+.doc-tpl-bill .meta-value {
+  font-size: 9.5px;
+  line-height: 1.25;
+}
+.doc-tpl-bill .meta-value.strong {
+  font-weight: 700;
+}
+
+/* ---- Items table (tall, fills page) ---- */
+.doc-tpl-bill table.pitems {
+  border: 1px solid #000;
+  border-top:none;
+  flex: 1 1 auto;
+  /* Fixed table height so a page with 5 rows and a page with 30 rows share the
+     same geometry — this guarantees the totals/footer always stay on the page.
+     Pagination caps the row count (see BILL_ROWS_PER_PAGE); the fill-row pads
+     any leftover space. */
+  table-layout: fixed;
+}
+.doc-tpl-bill table.pitems th {
+  border-bottom: 1px solid #000;
+  border-right: 1px solid #000;
+  padding: 4px 4px;
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+  vertical-align: center;
+}
+.doc-tpl-bill table.pitems th:last-child {
+  border-right: none;
+}
+.doc-tpl-bill table.pitems td {
+  border-right: 1px solid #000;
+  padding: 1px 4px;
+  font-size: 9.5px;
+  vertical-align: top;
+}
+.doc-tpl-bill table.pitems td:last-child {
+  border-right: none;
+}
+.doc-tpl-bill table.pitems td.c {
+  text-align: center;
+}
+.doc-tpl-bill table.pitems td.r {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.doc-tpl-bill table.pitems td.b {
+  font-weight: 700;
+}
+/* a spacer row that pushes totals down and keeps the vertical column rules */
+.doc-tpl-bill .fill-row {
+  height: 100%;
+}
+.doc-tpl-bill .fill-row td {
+  border-right: 1px solid #000;
+}
+.doc-tpl-bill .fill-row td:last-child {
+  border-right: none;
+}
+.doc-tpl-bill td.continued {
+  text-align: right;
+  padding-right: 10px;
+  vertical-align: bottom;
+  padding-bottom: 10px;
+  border-right: none !important;
+  border-top: 1px solid rgb(159, 157, 157);
+}
+.doc-tpl-bill .subtotal-row td {
+  border-top: 1px solid #000;
+  padding-top: 3px;
+}
+.doc-tpl-bill .tax-row td {
+  padding: 1px 4px;
+}
+.doc-tpl-bill .tax-row .tax-label {
+  text-align: right;
+  font-style: italic;
+  font-weight: 700;
+}
+.doc-tpl-bill .grand-row td {
+  border-top: 1px solid #000;
+  padding: 3px 4px;
+}
+
+/* ---- Footer: words, tax summary, bank/declaration ---- */
+.doc-tpl-bill .bill-foot {
+  border: 1px solid #000;
+  border-top: none;
+}
+.doc-tpl-bill .words-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid #000;
+  padding: 3px 7px;
+}
+.doc-tpl-bill .words-row .small {
+  font-size: 8.5px;
+}
+.doc-tpl-bill .words-strong {
+  font-weight: 600;
+  font-size: 9.5px;
+}
+.doc-tpl-bill .words-row .eoe {
+  font-size: 8.5px;
+  font-style: italic;
+}
+
+.doc-tpl-bill table.taxsummary {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9px;
+}
+.doc-tpl-bill table.taxsummary th,
+.doc-tpl-bill table.taxsummary td {
+  border: 1px solid #000;
+  padding: 2px 5px;
+  text-align: center;
+}
+.doc-tpl-bill table.taxsummary th {
+  font-weight: 400;
+}
+.doc-tpl-bill table.taxsummary td.l {
+  text-align: left;
+}
+.doc-tpl-bill table.taxsummary td.r {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.doc-tpl-bill table.taxsummary td.c {
+  text-align: center;
+}
+.doc-tpl-bill table.taxsummary tr.sum-total td {
+  border-top: 1px solid #000;
+}
+
+.doc-tpl-bill .taxwords-row {
+  border-bottom: 1px solid #000;
+  padding: 3px 7px;
+  font-size: 8.5px;
+}
+.doc-tpl-bill .taxwords-row b {
+  font-weight: 700;
+}
+
+.doc-tpl-bill .bill-foot-grid {
+  display: flex;
+  font-size: 9px;
+}
+.doc-tpl-bill .bill-foot-grid .decl {
+  width: 52%;
+  padding: 5px 7px;
+  border-right: 1px solid #000;
+}
+.doc-tpl-bill .bill-foot-grid .bank {
+  width: 48%;
+  padding: 5px 7px;
+}
+.doc-tpl-bill .bill-foot-grid .label {
+  text-decoration: underline;
+  margin-bottom: 2px;
+}
+.doc-tpl-bill .bill-foot-grid .bank .label {
+  font-weight: 700;
+}
+.doc-tpl-bill .bill-foot-grid .kv {
+  display: flex;
+}
+.doc-tpl-bill .bill-foot-grid .kv span:first-child {
+  width: 92px;
+  flex: none;
+}
+.doc-tpl-bill .sign-box {
+  margin-top: 12px;
+  text-align: right;
+  font-weight: 700;
+}
+.doc-tpl-bill .sign-line {
+  margin-top: 26px;
+  font-weight: 400;
+}
+
+/* ---- misc ---- */
+.doc-tpl-bill .bill-pagefoot {
+  text-align: right;
+  padding: 8px 10px;
+  font-size: 9.5px;
+}
+.doc-tpl-bill .gen-note {
+  text-align: center;
+  font-size: 9px;
+  padding-top: 8px;
+}

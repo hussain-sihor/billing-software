@@ -22,10 +22,14 @@ export default function PreviewModal({ open, doc, onClose }) {
 
   useEffect(() => {
     if (open) {
-      setTemplateId(resolveTemplateId((settings && settings.template) || 'classic'));
+      // Bills default to the dedicated bill template; quotations fall back to
+      // the configured default (or classic).
+      const preferred =
+        doc && doc.type === 'invoice' ? 'bill' : (settings && settings.template) || 'classic';
+      setTemplateId(resolveTemplateId(preferred));
       setStatus('');
     }
-  }, [open, settings]);
+  }, [open, settings, doc]);
 
   useEffect(() => {
     setMountEl(document.getElementById('exportMount'));

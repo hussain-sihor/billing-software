@@ -1,15 +1,12 @@
 import { fmtMoney, fmtDate, numberToWordsIndian, capitalizeWords } from '../lib/format';
 import { docParty, docCompany, itemAmount } from './templateData';
 
-// One A4 page for the five "simple" templates (classic/modern/compact/bold/
-// ledger). They share this markup and differ only via .doc-tpl-<id> CSS.
-// Mirrors buildGenericPage + its header/rows/totals/footer helpers.
-export default function GenericPage({ doc, items, isLast, pageNo, pageCount, parties, settings, measuring }) {
+// One A4 page for the five "simple" quotation templates (classic/modern/
+// compact/bold/ledger). They share this markup and differ only via
+// .doc-tpl-<id> CSS. Bills use the dedicated BillPage instead.
+export default function GenericPage({ doc, items, isLast, pageNo, pageCount, parties, settings }) {
   return (
-    <div
-      className="doc-page doc-border"
-      style={measuring ? { height: 'auto', minHeight: 0, maxHeight: 'none', overflow: 'visible' } : undefined}
-    >
+    <div className="doc-page doc-border">
       <GenericHeader doc={doc} parties={parties} settings={settings} />
       <table className="pitems">
         <thead>
@@ -36,8 +33,9 @@ export default function GenericPage({ doc, items, isLast, pageNo, pageCount, par
             </tr>
           ))}
           {!isLast && (
+            // <div style={{background:"red"}}>Continued...</div>
             <tr className="continue-line">
-              <td colSpan={7}>Continued...</td>
+              <td colSpan={7} style={{border:"none"}}>Continued...</td>
             </tr>
           )}
         </tbody>
@@ -59,7 +57,6 @@ export default function GenericPage({ doc, items, isLast, pageNo, pageCount, par
 function GenericHeader({ doc, parties, settings }) {
   const party = docParty(doc, parties);
   const co = docCompany(doc, settings);
-  const isInvoice = doc.type === 'invoice';
   return (
     <>
       <div className="doc-head">
@@ -74,7 +71,7 @@ function GenericHeader({ doc, parties, settings }) {
             {co.gstNo ? `GSTIN: ${co.gstNo}` : ''}
           </div>
         </div>
-        <div className="doc-type">{isInvoice ? 'Tax Invoice' : 'Quotation'}</div>
+        <div className="doc-type">Quotation</div>
       </div>
       <div className="doc-meta">
         <div className="half">
@@ -89,46 +86,12 @@ function GenericHeader({ doc, parties, settings }) {
           {party.email && <div>Email: {party.email}</div>}
           {party.phone && <div>Phone: {party.phone}</div>}
         </div>
-        <div className="half" >
-          <MRow label={isInvoice ? 'Invoice No:' : 'Quotation No:'} value={doc.docNumber} />
+        <div className="half">
+          <MRow label="Quotation No:" value={doc.docNumber} />
           <MRow label="Date:" value={fmtDate(doc.date)} />
           {doc.deliveryNote && <MRow label="Delivery note" value={doc.deliveryNote} />}
           {doc.terms && <MRow label="Terms" value={doc.terms} />}
         </div>
-        {/* <table className="half" 
-          style={{
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
-  }}
-        >
-  <tbody>
-    <tr>
-      <td>{isInvoice ? "Invoice No:" : "Quotation No:"}</td>
-      <td>{doc.docNumber}</td>
-    </tr>
-
-    <tr>
-      <td>Date:</td>
-      <td>{fmtDate(doc.date)}</td>
-    </tr>
-
-    {doc.deliveryNote && (
-      <tr>
-        <td>Delivery note:</td>
-        <td>{doc.deliveryNote}</td>
-      </tr>
-    )}
-
-    {doc.terms && (
-      <tr>
-        <td>Terms:</td>
-        <td>{doc.terms}</td>
-      </tr>
-    )}
-  </tbody>
-</table> */}
       </div>
     </>
   );

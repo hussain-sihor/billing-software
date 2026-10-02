@@ -1,6 +1,7 @@
 import { registry, resolveTemplateId } from './registry';
 import { usePaginatedPages } from './usePaginatedPages';
 import './templates.css';
+import './bill.css';
 
 // Renders a full document as a stack of A4 pages for a given template, with
 // items paginated to fit. Used by the preview modal and the export mount.
