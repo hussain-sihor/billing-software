@@ -78,7 +78,7 @@ function GenericHeader({ doc, parties, settings }) {
       </div>
       <div className="doc-meta">
         <div className="half">
-          <div className="m-title">Bill to</div>
+          <div className="m-title">BILL TO:</div>
           <div>
             <b>{party.name || '—'}</b>
           </div>
@@ -89,12 +89,46 @@ function GenericHeader({ doc, parties, settings }) {
           {party.email && <div>Email: {party.email}</div>}
           {party.phone && <div>Phone: {party.phone}</div>}
         </div>
-        <div className="half">
-          <MRow label={isInvoice ? 'Invoice No.' : 'Quotation No.'} value={doc.docNumber} />
-          <MRow label="Date" value={fmtDate(doc.date)} />
+        <div className="half" >
+          <MRow label={isInvoice ? 'Invoice No:' : 'Quotation No:'} value={doc.docNumber} />
+          <MRow label="Date:" value={fmtDate(doc.date)} />
           {doc.deliveryNote && <MRow label="Delivery note" value={doc.deliveryNote} />}
           {doc.terms && <MRow label="Terms" value={doc.terms} />}
         </div>
+        {/* <table className="half" 
+          style={{
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+  }}
+        >
+  <tbody>
+    <tr>
+      <td>{isInvoice ? "Invoice No:" : "Quotation No:"}</td>
+      <td>{doc.docNumber}</td>
+    </tr>
+
+    <tr>
+      <td>Date:</td>
+      <td>{fmtDate(doc.date)}</td>
+    </tr>
+
+    {doc.deliveryNote && (
+      <tr>
+        <td>Delivery note:</td>
+        <td>{doc.deliveryNote}</td>
+      </tr>
+    )}
+
+    {doc.terms && (
+      <tr>
+        <td>Terms:</td>
+        <td>{doc.terms}</td>
+      </tr>
+    )}
+  </tbody>
+</table> */}
       </div>
     </>
   );
@@ -106,26 +140,26 @@ function GenericTotals({ doc, settings }) {
     <>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <tbody>
-          <tr className="ptot-row">
-            <td colSpan={5} style={{ border: 'none' }} />
-            <td>Subtotal</td>
-            <td className="r">{fmtMoney(doc.subtotal)}</td>
+          <tr className="ptot-row" style={{border:'1px solid #cfcbcb'}}>
+            <td colSpan={3}>Subtotal</td>
+            <td className="r" colSpan={4}>{fmtMoney(doc.subtotal)}</td>
+            {/* <td style={{ border: 'none' }} /> */}
           </tr>
-          <GstRows doc={doc} />
-          <tr className="ptot-row">
-            <td colSpan={5} style={{ border: 'none' }} />
-            <td>Round off</td>
-            <td className="r">{fmtMoney(doc.roundOff)}</td>
+          <GstRows doc={doc} style={{width:'100%'}}/>
+          <tr className="ptot-row" style={{border:'1px solid #cfcbcb'}}>
+            {/* <td colSpan={5} style={{ border: 'none' }} /> */}
+            <td colSpan={3}>Round off</td>
+            <td className="r" colSpan={4} >{fmtMoney(doc.roundOff)}</td>
           </tr>
           <tr className="ptot-row grand">
-            <td colSpan={5} style={{ border: 'none' }} />
-            <td>Grand total</td>
-            <td className="r">{fmtMoney(doc.grandTotal)}</td>
+            {/* <td colSpan={5} style={{ border: 'none' }} /> */}
+            <td colSpan={3}>Grand Total:</td>
+            <td className="r" colSpan={4}>{fmtMoney(doc.grandTotal)}</td>
           </tr>
         </tbody>
       </table>
       <div className="words-row">
-        <b>Amount in words:</b> Rupees {capitalizeWords(numberToWordsIndian(doc.grandTotal))} Only
+        <b>Amount:</b> {capitalizeWords(numberToWordsIndian(doc.grandTotal))} RUPEES ONLY
       </div>
       <FootGrid co={co} />
     </>
@@ -140,15 +174,15 @@ function GstRows({ doc }) {
   if (doc.gstMode === 'split') {
     return (
       <>
-        <tr className="ptot-row">
-          <td colSpan={5} style={{ border: 'none' }} />
-          <td>CGST @ {(doc.gstRate / 2).toFixed(2)}%</td>
-          <td className="r">{fmtMoney(doc.cgst)}</td>
+        <tr className="ptot-row " style={{border:'1px solid #cfcbcb'}}>
+          {/* <td colSpan={5} style={{ border: 'none',}} /> */}
+          <td colSpan={3}>CGST @ {(doc.gstRate / 2).toFixed(2)}%</td>
+          <td className="r" colSpan={4}>{fmtMoney(doc.cgst)}</td>
         </tr>
-        <tr className="ptot-row">
-          <td colSpan={5} style={{ border: 'none' }} />
-          <td>SGST @ {(doc.gstRate / 2).toFixed(2)}%</td>
-          <td className="r">{fmtMoney(doc.sgst)}</td>
+        <tr className="ptot-row" style={{border:'1px solid #cfcbcb'}}>
+          {/* <td colSpan={5} style={{ border: 'none' }} /> */}
+          <td colSpan={3}>SGST @ {(doc.gstRate / 2).toFixed(2)}%</td>
+          <td className="r" colSpan={4}>{fmtMoney(doc.sgst)}</td>
         </tr>
       </>
     );
@@ -156,9 +190,9 @@ function GstRows({ doc }) {
   if (doc.gstMode === 'igst') {
     return (
       <tr className="ptot-row">
-        <td colSpan={5} style={{ border: 'none' }} />
-        <td>IGST @ {doc.gstRate}%</td>
-        <td className="r">{fmtMoney(doc.igst)}</td>
+        {/* <td colSpan={5} style={{ border: 'none' }} /> */}
+        <td colSpan={3}>IGST @ {doc.gstRate}%</td>
+        <td className="r" colSpan={4}>{fmtMoney(doc.igst)}</td>
       </tr>
     );
   }
@@ -169,10 +203,10 @@ function FootGrid({ co }) {
   return (
     <div className="foot-grid">
       <div className="half">
-        <div className="f-title">Bank details</div>
-        {co.bankName && <div>Bank: {co.bankName}</div>}
-        {co.accName && <div>Account name: {co.accName}</div>}
-        {co.accNo && <div>Account no: {co.accNo}</div>}
+        <div className="f-title">Bank Details</div>
+        {co.bankName && <div>Bank Name: {co.bankName}</div>}
+        {co.accName && <div>Account Name: {co.accName}</div>}
+        {co.accNo && <div>Account No: {co.accNo}</div>}
         {co.ifsc && <div>IFSC: {co.ifsc}</div>}
         {co.branch && <div>Branch: {co.branch}</div>}
         {co.upi && <div>UPI: {co.upi}</div>}

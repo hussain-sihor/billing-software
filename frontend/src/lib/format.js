@@ -70,5 +70,6 @@ export function numberToWordsIndian(num) {
 }
 
 export function capitalizeWords(s) {
-  return String(s || '').replace(/\b\w/g, (c) => c.toUpperCase());
+  // return String(s || '').replace(/\b\w/g, (c) => c.toUpperCase());
+  return String(s || "").toUpperCase();
 }
