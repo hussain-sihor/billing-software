@@ -29,7 +29,8 @@ export default function BillPage({ doc, items, isLast, pageNo, parties, settings
             <th style={{ width: 60 }}>HSN/SAC</th>
             <th style={{ width: 70 }}>Quantity</th>
             <th style={{ width: 60 }}>Rate</th>
-            <th style={{ width: 32 }}>Per</th>
+            <th style={{ width: 52 }}>Disc %</th>
+            <th style={{ width: 42 }}>Per</th>
             <th style={{ width: 80 }}>Amount</th>
           </tr>
         </thead>
@@ -37,11 +38,12 @@ export default function BillPage({ doc, items, isLast, pageNo, parties, settings
           {items.map((it, i) => (
             <tr key={i}>
               <td className="c">{it.slNo ?? i + 1}</td>
-              <td className="b">{it.description}</td>
+              <td className="" style={{fontSize:"12px",fontWeight:"500"}}>{it.description}</td>
               <td className="c">{it.hsn || ''}</td>
               <td className="c b">{it.qty} {it.unit}</td>
               <td className="r">{numOnly(it.rate)}</td>
-              <td className="c">{it.unit}</td>
+              <td className="c">{it.disc ? it.disc + '%' : ''}</td>
+              <td className="c"style={{fontSize:"10px",fontWeight:"500"}}>{it.unit}</td>
               <td className="r b">{numOnly(itemAmount(it))}</td>
             </tr>
           ))}
@@ -49,7 +51,7 @@ export default function BillPage({ doc, items, isLast, pageNo, parties, settings
             extras.rows
           ) : (
             <tr className="fill-row">
-              <td colSpan={7} className="continued">continued ...</td>
+              <td colSpan={8} className="continued">continued ...</td>
             </tr>
           )}
         </tbody>
@@ -103,18 +105,18 @@ function BillHeader({ doc, parties, settings }) {
 
       {/* Right column: invoice meta grid */}
       <div className="bill-head-right">
-        <MetaCell label="Invoice No:" value={doc.docNumber} strong />
-        <MetaCell label="Dated:" value={fmtDate(doc.date)} strong />
-        <MetaCell label="Delivery Note:" value={doc.deliveryNote} />
-        <MetaCell label="Mode/Terms of Payment:" value={doc.modeOfPayment} />
-        <MetaCell label="Reference No & Date:" value={doc.refNoDate} />
-        <MetaCell label="Other References:" value={doc.otherReferences} />
-        <MetaCell label="Buyer's Order No:" value={doc.buyerOrderNo} />
-        <MetaCell label="Dated:" value={doc.buyerOrderDate} />
-        <MetaCell label="Dispatch Doc No:" value={doc.dispatchDocNo} />
-        <MetaCell label="Delivery Note Date:" value={doc.deliveryNoteDate} />
-        <MetaCell label="Dispatched through:" value={doc.dispatchedThrough} />
-        <MetaCell label="Destination:" value={doc.destination} />
+        <MetaCell label="Invoice No:" value={doc.docNumber} strong col="col1" />
+        <MetaCell label="Dated:" value={fmtDate(doc.date)} strong col="col2" />
+        <MetaCell label="Delivery Note:" value={doc.deliveryNote} col="col1" />
+        <MetaCell label="Mode/Terms of Payment:" value={doc.modeOfPayment} col="col2" />
+        <MetaCell label="Reference No & Date:" value={doc.refNoDate} col="col1" />
+        <MetaCell label="Other References:" value={doc.otherReferences} col="col2" />
+        <MetaCell label="Buyer's Order No:" value={doc.buyerOrderNo} span2  />
+        <MetaCell label="Dated:" value={doc.buyerOrderDate} col="col1" />
+        <MetaCell label="Dispatch Doc No:" value={doc.dispatchDocNo} col="col2" />
+        <MetaCell label="Delivery Note Date:" value={doc.deliveryNoteDate} col="col1" />
+        <MetaCell label="Dispatched through:" value={doc.dispatchedThrough} col="col2" />
+        <MetaCell label="Destination:" value={doc.destination} span2 />
         <MetaCell label="Terms of Delivery:" value={doc.terms} span2 />
       </div>
     </div>
@@ -133,18 +135,18 @@ function billExtras(doc, co) {
   if (isSplit) {
     taxRows.push(
       <tr key="cgst" className="tax-row">
-        <td /><td className="tax-label">Output CGST@{half}%</td><td /><td /><td /><td className="c">{half} %</td>
+        <td /><td className="tax-label">Output CGST@{half}%</td><td /><td /><td /><td /><td className="c">{half} %</td>
         <td className="r">{numOnly(doc.cgst)}</td>
       </tr>,
       <tr key="sgst" className="tax-row">
-        <td /><td className="tax-label">Output SGST@{half}%</td><td /><td /><td /><td className="c">{half} %</td>
+        <td /><td className="tax-label">Output SGST@{half}%</td><td /><td /><td /><td /><td className="c">{half} %</td>
         <td className="r">{numOnly(doc.sgst)}</td>
       </tr>
     );
   } else if (isIgst) {
     taxRows.push(
       <tr key="igst" className="tax-row">
-        <td /><td className="tax-label">Output IGST@{doc.gstRate}%</td><td /><td /><td /><td className="c">{doc.gstRate} %</td>
+        <td /><td className="tax-label">Output IGST@{doc.gstRate}%</td><td /><td /><td /><td /><td className="c">{doc.gstRate} %</td>
         <td className="r">{numOnly(doc.igst)}</td>
       </tr>
     );
@@ -153,13 +155,13 @@ function billExtras(doc, co) {
   const roundRow = doc.roundOff ? (
     <tr key="round" className="tax-row">
       <td /><td className="tax-label"><i>Less :</i> <b style={{ float: 'right' }}>Round Off</b></td>
-      <td /><td /><td /><td /><td className="r">{roundOffStr(doc.roundOff)}</td>
+      <td /><td /><td /><td /><td /><td className="r">{roundOffStr(doc.roundOff)}</td>
     </tr>
   ) : null;
 
   const subtotalRow = (
     <tr key="subtotal" className="subtotal-row">
-      <td /><td /><td /><td /><td /><td /><td className="r">{numOnly(doc.subtotal)}</td>
+      <td /><td /><td /><td /><td /><td /><td /><td className="r">{numOnly(doc.subtotal)}</td>
     </tr>
   );
 
@@ -167,7 +169,7 @@ function billExtras(doc, co) {
   // vertical column rules, mirroring the Tally sample's empty area.
   const fillRow = (
     <tr key="fill" className="fill-row">
-      <td /><td /><td /><td /><td /><td /><td />
+      <td /><td /><td /><td /><td /><td /><td /><td />
     </tr>
   );
 
@@ -176,7 +178,7 @@ function billExtras(doc, co) {
   const totalRow = (
     <tr key="total" className="grand-row">
       <td /><td className="r"><b>Total</b></td><td /><td className="r"><b>{totalQty} {commonUnit}</b></td>
-      <td /><td /><td className="r"><b>₹ {numOnly(doc.grandTotal)}</b></td>
+      <td /><td /><td /><td className="r"><b>₹ {numOnly(doc.grandTotal)}</b></td>
     </tr>
   );
 
@@ -229,7 +231,7 @@ function BillFooter({ doc, co }) {
       <div className="words-row">
         <div>
           <span className="small">Amount Chargeable (In words):</span>
-          <div className="words-strong">{capitalizeWords(numberToWordsIndian(doc.grandTotal))} Rupees Only</div>
+          <span className="words-strong">{capitalizeWords(numberToWordsIndian(doc.grandTotal))} Rupees Only</span>
         </div>
         <div className="eoe">E. &amp; O.E</div>
       </div>
@@ -292,9 +294,13 @@ function BillFooter({ doc, co }) {
   );
 }
 
-function MetaCell({ label, value, strong, span2 }) {
+function MetaCell({ label, value, strong, span2, stack, col }) {
+  const cls = ['meta-cell'];
+  if (span2) cls.push('span2');
+  else if (col) cls.push(col); // 'col1' | 'col2'
+  if (stack) cls.push('stack');
   return (
-    <div className={'meta-cell' + (span2 ? ' span2' : '')}>
+    <div className={cls.join(' ')}>
       <div className="meta-label">{label}</div>
       <div className={'meta-value' + (strong ? ' strong' : '')}>{value || '\u00A0'}</div>
     </div>

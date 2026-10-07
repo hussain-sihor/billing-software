@@ -64,7 +64,7 @@
   text-transform: uppercase;
 }
 .doc-tpl-bill .co-sub {
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.4;
   margin-top: 2px;
 }
@@ -79,7 +79,7 @@
   margin-bottom: 2px;
 }
 .doc-tpl-bill .party-name {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -96,28 +96,46 @@
   width: 48%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-auto-rows: min-content;
+  grid-auto-rows: 1fr;
 }
 .doc-tpl-bill .meta-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   border-bottom: 1px solid #000;
   border-right: 1px solid #000;
   padding: 3px 6px;
-  min-height: 26px;
+  min-height: 20px;
 }
-.doc-tpl-bill .bill-head-right .meta-cell:nth-child(2n) {
+/* Border logic driven by explicit column classes from JSX (span-safe).
+   .col1 sits in the left column and keeps its right divider; .col2 sits in
+   the right column and drops it. .span2 spans both columns. */
+.doc-tpl-bill .bill-head-right .meta-cell.col2 {
   border-right: none;
 }
 .doc-tpl-bill .meta-cell.span2 {
   grid-column: 1 / -1;
   border-right: none;
 }
+.doc-tpl-bill .meta-cell.stack {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 1px;
+}
+.doc-tpl-bill .meta-cell.stack .meta-value {
+  font-weight: 700;
+}
 .doc-tpl-bill .meta-label {
-  font-size: 8.5px;
+  font-size: 10px;
   line-height: 1.2;
+  flex: none;
+  white-space: nowrap;
 }
 .doc-tpl-bill .meta-value {
-  font-size: 9.5px;
+  font-size: 10px;
   line-height: 1.25;
+  text-align: left;
 }
 .doc-tpl-bill .meta-value.strong {
   font-weight: 700;
@@ -149,8 +167,8 @@
 .doc-tpl-bill table.pitems td {
   border-right: 1px solid #000;
   padding: 1px 4px;
-  font-size: 9.5px;
-  vertical-align: top;
+  font-size: 12px;
+  vertical-align: middle;
 }
 .doc-tpl-bill table.pitems td:last-child {
   border-right: none;
@@ -198,6 +216,7 @@
 .doc-tpl-bill .grand-row td {
   border-top: 1px solid #000;
   padding: 3px 4px;
+  vertical-align: middle;
 }
 
 /* ---- Footer: words, tax summary, bank/declaration ---- */
@@ -213,7 +232,7 @@
   padding: 3px 7px;
 }
 .doc-tpl-bill .words-row .small {
-  font-size: 8.5px;
+  font-size: 9px;
 }
 .doc-tpl-bill .words-strong {
   font-weight: 600;
@@ -231,7 +250,7 @@
 }
 .doc-tpl-bill table.taxsummary th,
 .doc-tpl-bill table.taxsummary td {
-  border: 1px solid #000;
+  border: 0.6px solid #676565;
   border-left: none;
   padding: 2px 5px;
   text-align: center;
@@ -265,7 +284,7 @@
 
 .doc-tpl-bill .bill-foot-grid {
   display: flex;
-  font-size: 9px;
+  font-size: 10px;
 }
 .doc-tpl-bill .bill-foot-grid .decl {
   width: 52%;
@@ -294,6 +313,7 @@
   margin-top: 12px;
   text-align: right;
   font-weight: 700;
+  font-size: 12px;
 }
 .doc-tpl-bill .sign-line {
   margin-top: 26px;

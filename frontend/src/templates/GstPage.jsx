@@ -21,6 +21,7 @@ export default function GstPage({ doc, items, isLast, pageNo, pageCount, parties
             <th style={{ width: 60 }}>HSN/SAC</th>
             <th style={{ width: 60 }}>Quantity</th>
             <th style={{ width: 65 }}>Rate</th>
+            <th style={{ width: 40 }}>Disc %</th>
             <th style={{ width: 40 }}>per</th>
             <th style={{ width: 80 }}>Amount</th>
           </tr>
@@ -33,11 +34,12 @@ export default function GstPage({ doc, items, isLast, pageNo, pageCount, parties
               <td className="c">{it.hsn || ''}</td>
               <td className="c">{it.qty}</td>
               <td className="r">{fmtMoney(it.rate)}</td>
+              <td className="c">{it.disc ? it.disc + '%' : ''}</td>
               <td className="c">{it.unit}</td>
               <td className="r">{fmtMoney(itemAmount(it))}</td>
             </tr>
           ))}
-          {isLast ? extras.rows : <tr className="continue-line"><td colSpan={7}>Continued...</td></tr>}
+          {isLast ? extras.rows : <tr className="continue-line"><td colSpan={8}>Continued...</td></tr>}
         </tbody>
       </table>
       <div className="doc-bottom">
@@ -103,18 +105,18 @@ function gstExtras(doc, co) {
   if (isSplit) {
     taxRows.push(
       <tr key="cgst">
-        <td /><td className="tax-label">Output CGST @ {half}%</td><td /><td />
+        <td /><td className="tax-label">Output CGST @ {half}%</td><td /><td /><td />
         <td className="c">{half}</td><td className="c">%</td><td className="r">{fmtMoney(doc.cgst)}</td>
       </tr>,
       <tr key="sgst">
-        <td /><td className="tax-label">Output SGST @ {half}%</td><td /><td />
+        <td /><td className="tax-label">Output SGST @ {half}%</td><td /><td /><td />
         <td className="c">{half}</td><td className="c">%</td><td className="r">{fmtMoney(doc.sgst)}</td>
       </tr>
     );
   } else if (doc.gstMode === 'igst') {
     taxRows.push(
       <tr key="igst">
-        <td /><td className="tax-label">Output IGST @ {doc.gstRate}%</td><td /><td />
+        <td /><td className="tax-label">Output IGST @ {doc.gstRate}%</td><td /><td /><td />
         <td className="c">{doc.gstRate}</td><td className="c">%</td><td className="r">{fmtMoney(doc.igst)}</td>
       </tr>
     );
@@ -125,7 +127,7 @@ function gstExtras(doc, co) {
   const totalRow = (
     <tr key="total" style={{ fontWeight: 700 }}>
       <td /><td style={{ textAlign: 'right' }}>Total</td><td />
-      <td className="c">{totalQty} {commonUnit}</td><td /><td /><td className="r">{fmtMoney(doc.grandTotal)}</td>
+      <td className="c">{totalQty} {commonUnit}</td><td /><td /><td /><td className="r">{fmtMoney(doc.grandTotal)}</td>
     </tr>
   );
 
