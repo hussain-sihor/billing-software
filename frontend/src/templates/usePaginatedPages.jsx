@@ -10,7 +10,12 @@ const PAGE_PX = 1123;
 // items table so the header/totals/footer always stay on the page. Rows 1..N
 // land on page 1, N+1..2N on page 2, and so on; totals + tax summary render
 // only on the last page and sum every item in the document.
-const BILL_ROWS_PER_PAGE = 38;
+//
+// The cap must leave room for the tall Tally header (seller/buyer box + the
+// invoice-meta grid) which every page carries. 38 overflowed the fixed-height
+// items table and clipped the last few rows (e.g. 36–38 vanished between
+// pages); 32 fits reliably under the header.
+const BILL_ROWS_PER_PAGE = 32;
 
 // Quotation templates (classic/modern/compact/bold/ledger — all GenericPage)
 // use the same deterministic fixed-row pagination. The cap is conservative so

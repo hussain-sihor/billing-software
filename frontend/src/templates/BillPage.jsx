@@ -115,7 +115,7 @@ function BillHeader({ doc, parties, settings }) {
         <MetaCell label="Dated:" value={doc.buyerOrderDate} col="col1" />
         <MetaCell label="Dispatch Doc No:" value={doc.dispatchDocNo} col="col2" />
         <MetaCell label="Delivery Note Date:" value={doc.deliveryNoteDate} col="col1" />
-        <MetaCell label="Dispatched through:" value={doc.dispatchedThrough} col="col2" />
+        <MetaCell label="Dispatched Through:" value={doc.dispatchedThrough} col="col2" />
         <MetaCell label="Destination:" value={doc.destination} span2 />
         <MetaCell label="Terms of Delivery:" value={doc.terms} span2 />
       </div>
