@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { apiPost } from '../lib/api';
+import { apiPost, apiPut } from '../lib/api';
 import { useStore } from '../lib/store';
 import { fmtMoney } from '../lib/format';
 import { normStr, searchProducts, highlightSegments } from '../lib/productSearch';
@@ -14,7 +14,7 @@ import { normStr, searchProducts, highlightSegments } from '../lib/productSearch
 //  - onType(text): user typed free text (clears productId, sets description)
 //  - onProductCreated(product): a new product was saved from this row
 //  - onEnterNavigate(): move focus to Qty after picking (optional)
-export default function ProductSearchCell({ row, onPick, onType, onProductCreated }) {
+export default function ProductSearchCell({ row, onPick, onType, onProductCreated, onEnter }) {
   const products = useStore((s) => s.products);
   const refreshProducts = useStore((s) => s.refreshProducts);
   const toast = useStore((s) => s.toast);
@@ -41,6 +41,32 @@ export default function ProductSearchCell({ row, onPick, onType, onProductCreate
     return !products.some((p) => normStr(p.name) === normStr(name));
   })();
 
+  // A linked saved product whose row values differ from what is stored.
+  const changed =
+    !!picked &&
+    ((Number(row.rate) || 0) !== (Number(picked.rate) || 0) ||
+      (Number(row.disc) || 0) !== (Number(picked.disc) || 0) ||
+      (row.unit || '') !== (picked.unit || 'pcs') ||
+      (row.hsn || '') !== (picked.hsn || '') ||
+      (row.description || '') !== (picked.description || picked.name));
+
+  async function updateProduct() {
+    try {
+      await apiPut(`/products/${picked._id}`, {
+        name: picked.name,
+        description: (row.description || '').trim(),
+        unit: (row.unit || 'pcs').trim() || 'pcs',
+        rate: parseFloat(row.rate) || 0,
+        disc: parseFloat(row.disc) || 0,
+        hsn: (row.hsn || '').trim()
+      });
+      await refreshProducts();
+      toast('Saved product updated');
+    } catch (err) {
+      toast(err.message || 'Could not update product');
+    }
+  }
+
   function handleInput(e) {
     const q = e.target.value;
     onType(q);
@@ -55,6 +81,15 @@ export default function ProductSearchCell({ row, onPick, onType, onProductCreate
   }
 
   function onKeyDown(e) {
+    if (e.key === 'Enter' && !(open && flat.length > 0)) {
+      // Nothing to pick: a typed name just moves on to a new row.
+      e.preventDefault();
+      if (value.trim()) {
+        setOpen(false);
+        onEnter?.();
+      }
+      return;
+    }
     if (!open || flat.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -65,7 +100,10 @@ export default function ProductSearchCell({ row, onPick, onType, onProductCreate
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const idx = active < 0 ? 0 : active;
-      if (flat[idx]) pick(flat[idx]);
+      if (flat[idx]) {
+        pick(flat[idx]);
+        onEnter?.();
+      }
     } else if (e.key === 'Escape') {
       setOpen(false);
     }
@@ -88,6 +126,7 @@ export default function ProductSearchCell({ row, onPick, onType, onProductCreate
       description: (row.description || '').trim(),
       unit: (row.unit || 'pcs').trim() || 'pcs',
       rate: parseFloat(row.rate) || 0,
+      disc: parseFloat(row.disc) || 0,
       hsn: (row.hsn || '').trim()
     };
     try {
@@ -110,6 +149,7 @@ export default function ProductSearchCell({ row, onPick, onType, onProductCreate
           'focus:outline-none focus:bg-white focus:border-accent focus:rounded',
           value ? 'font-semibold' : ''
         ].join(' ')}
+        data-product-search
         placeholder="Search or type product…"
         value={value}
         autoComplete="off"
@@ -132,6 +172,18 @@ export default function ProductSearchCell({ row, onPick, onType, onProductCreate
           onClick={saveProduct}
         >
           💾 Save
+        </button>
+      )}
+
+      {changed && (
+        <button
+          type="button"
+          title="Update the saved product with these values"
+          className="flex-none inline-flex items-center gap-0.5 border border-accent bg-[#E4F3EE] text-accent-dark text-[10.5px] font-bold px-1.5 py-0.5 rounded-[5px] whitespace-nowrap hover:bg-accent hover:text-white"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={updateProduct}
+        >
+          💾 Update
         </button>
       )}
 

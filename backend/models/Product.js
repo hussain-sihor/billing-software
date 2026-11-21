@@ -7,6 +7,8 @@ const ProductSchema = new Schema(
     description: { type: String, trim: true, default: '' },
     unit: { type: String, trim: true, default: 'pcs' },
     rate: { type: Number, required: true, default: 0, min: 0 },
+    disc: { type: Number, default: 0, min: 0, max: 100 }, // default discount %, filled into bill rows
+    group: { type: String, trim: true, default: '' }, // free-text group/category, e.g. "Cables"
     hsn: { type: String, trim: true, default: '' } // HSN/SAC code, optional — only shown on the GST-Detailed invoice template
   },
   { timestamps: true }

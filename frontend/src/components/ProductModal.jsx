@@ -4,12 +4,13 @@ import { useStore } from '../lib/store';
 import Modal from './Modal';
 import { Field, Input, Textarea, Button } from './ui';
 
-const EMPTY = { name: '', description: '', unit: 'pcs', rate: '', hsn: '' };
+const EMPTY = { name: '', group: '', description: '', unit: 'pcs', rate: '', disc: '', hsn: '' };
 
 // Add/edit product modal. `product` is the product being edited, or null to add.
 export default function ProductModal({ open, product, onClose, onSaved }) {
   const refreshProducts = useStore((s) => s.refreshProducts);
   const toast = useStore((s) => s.toast);
+  const products = useStore((s) => s.products);
   const [form, setForm] = useState(EMPTY);
 
   useEffect(() => {
@@ -18,9 +19,11 @@ export default function ProductModal({ open, product, onClose, onSaved }) {
       product
         ? {
             name: product.name || '',
+            group: product.group || '',
             description: product.description || '',
             unit: product.unit || 'pcs',
             rate: product.rate ?? '',
+            disc: product.disc || '',
             hsn: product.hsn || ''
           }
         : EMPTY
@@ -37,9 +40,11 @@ export default function ProductModal({ open, product, onClose, onSaved }) {
     }
     const data = {
       name,
+      group: form.group.trim(),
       description: form.description.trim(),
       unit: form.unit.trim() || 'pcs',
       rate: parseFloat(form.rate) || 0,
+      disc: Math.min(100, Math.max(0, parseFloat(form.disc) || 0)),
       hsn: form.hsn.trim()
     };
     try {
@@ -60,6 +65,19 @@ export default function ProductModal({ open, product, onClose, onSaved }) {
         <Field label="Product name" className="col-span-2">
           <Input value={form.name} onChange={set('name')} />
         </Field>
+        <Field label="Group (optional)" className="col-span-2">
+          <Input
+            list="product-groups"
+            value={form.group}
+            onChange={set('group')}
+            placeholder="Pick an existing group or type a new one"
+          />
+          <datalist id="product-groups">
+            {[...new Set(products.map((p) => p.group).filter(Boolean))].sort().map((g) => (
+              <option key={g} value={g} />
+            ))}
+          </datalist>
+        </Field>
         <Field label="Description" className="col-span-2">
           <Textarea value={form.description} onChange={set('description')} />
         </Field>
@@ -68,6 +86,9 @@ export default function ProductModal({ open, product, onClose, onSaved }) {
         </Field>
         <Field label="Default rate (₹)">
           <Input type="number" value={form.rate} onChange={set('rate')} />
+        </Field>
+        <Field label="Default discount (%)" className="col-span-2">
+          <Input type="number" value={form.disc} onChange={set('disc')} placeholder="0" />
         </Field>
         <Field label="HSN/SAC code (optional)" className="col-span-2">
           <Input

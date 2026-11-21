@@ -107,14 +107,17 @@ export function Pill({ type }) {
 }
 
 // Shared data table shell with uppercase column headers.
-export function DTable({ head, children }) {
+// Optional `widths` (array of CSS widths, one per column) switches to a fixed
+// layout so columns don't shift when cell contents change.
+export function DTable({ head, children, widths }) {
   return (
-    <table className="w-full border-collapse text-[13px]">
+    <table className={['w-full border-collapse text-[13px]', widths ? 'table-fixed' : ''].join(' ')}>
       <thead>
         <tr>
           {head.map((h, i) => (
             <th
               key={i}
+              style={widths && widths[i] ? { width: widths[i] } : undefined}
               className="text-left text-[11.5px] uppercase tracking-[.3px] text-muted border-b border-bordr-strong px-2 py-2"
             >
               {h}
